@@ -1,0 +1,24 @@
+.home-section{
+    padding: 10rem 0;
+    height: auto;
+}
+
+.home-head{
+    font-size: 5rem;
+}
+
+.home-para{
+    font-size: 1.2rem;
+}
+
+.contact-btn{
+    background-color: #e7e7e7 !important;
+    border: none;
+    color: #000;
+}
+
+.contact-btn:hover{
+    background-color: #000 !important;
+    border: none;
+    color: #e7e7e7;
+}

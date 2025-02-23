@@ -1,0 +1,28 @@
+.explore-all-wrapper {
+    min-width: fit-content;
+    padding: 1rem;
+}
+
+.explore-all {
+    text-decoration: none;
+    color: #000;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.explore-all:hover {
+    transform: translateX(10px);
+    /* color: #primary-color; */
+}
+
+@media (max-width: 991px) {
+    .explore-all-wrapper {
+        width: 100%;
+        text-align: center;
+    }
+    
+    .explore-all {
+        justify-content: center;
+    }
+}

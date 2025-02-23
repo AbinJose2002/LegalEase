@@ -1,0 +1,35 @@
+import mongoose from "mongoose";
+
+const caseSchema = new mongoose.Schema({
+  case_id: { 
+    type: String,
+    unique: true 
+  },
+  client_id: { 
+    type: String, 
+    required: true  
+  },
+  advocate_id: { 
+    type: String,
+    required: true 
+  },
+  case_title: { 
+    type: String, 
+    required: true 
+  },
+  case_description: { 
+    type: String 
+  },
+  status: { 
+    type: String, 
+    enum: ['Not Approved', 'Open', 'In Progress', 'Closed'], 
+    default: 'Not Approved' 
+  },
+  created_at: { 
+    type: Date, 
+    default: Date.now 
+  }
+});
+
+const CaseModel = mongoose.model('Case', caseSchema);
+export default CaseModel

@@ -1,0 +1,16 @@
+.why-head{
+    font-size: 4rem;
+}
+
+.why-section{
+    height: auto;
+    padding: 7em 0 10em 0;
+}
+
+.text-justify{
+    text-align: justify;
+}
+
+.why-card{
+    min-height: 15rem;
+}
