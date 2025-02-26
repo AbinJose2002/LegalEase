@@ -13,7 +13,7 @@ export default function Case() {
         const advToken = localStorage.getItem('usertoken');
         const response = await axios.post('http://localhost:8080/api/case/view-user', { advToken })
         setClientDetails(response.data.clients);
-        console.log(response.data.clients)
+        // console.log(response.data.clients)
       } catch (err) {
         setError(err.message);
       } finally {
@@ -79,7 +79,7 @@ export default function Case() {
                     }}
                   ></span>
                 </td>
-                <td style={{ padding: '10px' }}>{client.status === 'In Progress' ? <button className='btn btn-success' onClick={() => { payMethod(client.advocate_id, client._id ) }}>Pay Now</button>: <button className="btn btn-primary">No Payment Due</button> }</td>
+                <td style={{ padding: '10px' }}>{client.status === 'In Progress' ? <button className='btn btn-success' onClick={() => { payMethod(client.advocate_id, client._id ) }}>Pay Now</button>: <button className="btn btn-success disabled">No Payment Due</button> }</td>
 
 
               </tr>

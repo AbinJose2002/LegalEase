@@ -23,7 +23,7 @@ export default function App() {
           <Route path='/advocate-login' element={<AdvocateLogin />}></Route>
           <Route path='/advocate-register' element={<AdvocateRegister />}></Route>
           <Route path='/advocate-register-success' element={<AdvocateSuccess />}></Route>
-          <Route path='/advance-payment-success/:case_id' element={<AdvancePaymentSuccess />}></Route>
+          <Route path='/advance-payment-success/:pay_type/:pay_id/:case_id' element={<AdvancePaymentSuccess />}></Route>
         </Routes>
       </BrowserRouter>
     </div>

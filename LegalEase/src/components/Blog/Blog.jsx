@@ -1,36 +1,30 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import axios from 'axios';
 
 const Blog = () => {
-  const blogPosts = [
-    {
-      id: 1,
-      title: "Getting Started with React",
-      description: "Learn the basics of React and start building modern web applications",
-      date: "April 15, 2024",
-      image: "/blog-1.jpg",
-      author: "John Doe"
-    },
-    {
-      id: 2,
-      title: "CSS Best Practices", 
-      description: "Discover the latest CSS techniques and best practices for modern web development",
-      date: "April 12, 2024",
-      image: "/blog-2.jpg",
-      author: "Jane Smith"
-    },
-    {
-      id: 3,
-      title: "JavaScript Tips & Tricks",
-      description: "Enhance your JavaScript skills with these essential tips and tricks",
-      date: "April 10, 2024",
-      image: "/blog-3.jpg",
-      author: "Mike Johnson"
-    }
-  ];
+  const [blogPosts, setBlogPosts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const response = await axios.get("http://localhost:8080/api/blogs/all");
+        setBlogPosts(response.data.blogs);
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching blogs:", error);
+        setError("Failed to load blog posts");
+        setLoading(false);
+      }
+    };
+
+    fetchBlogs();
+  }, []);
 
   return (
-    <section className="py-5 bg-light" id='blog'>
+    <section className="py-5 bg-light" id="blog">
       <div className="container">
         <div className="text-center mb-5">
           <h2 className="fw-bold mb-3">Latest from Our Blog</h2>
@@ -39,29 +33,30 @@ const Blog = () => {
           </p>
         </div>
 
-        <div className="row g-4">
-          {blogPosts.map((post) => (
-            <div key={post.id} className="col-md-4">
-              <div className="card h-100 p-4">
-                <img 
-                  src={post.image} 
-                  className="card-img-top" 
-                  alt={post.title}
-                  style={{ height: '200px', objectFit: 'cover' }}
-                />
-                <div className="card-body">
-                  <small className="text-muted">{post.date}</small>
-                  <h5 className="card-title mt-2">{post.title}</h5>
-                  <p className="card-text">{post.description}</p>
-                  <p className="text-muted mb-2">Written by: {post.author}</p>
-                  <Link to={`/blog/${post.id}`} className="text-primary text-decoration-none">
-                    Read More →
-                  </Link>
+        {loading ? (
+          <p className="text-center">Loading...</p>
+        ) : error ? (
+          <p className="text-center text-danger">{error}</p>
+        ) : (
+          <div className="row g-4">
+            {blogPosts.map((post) => (
+              <div key={post._id} className="col-md-4">
+                <div className="card h-100 p-4">
+                  
+                  <div className="card-body">
+                    <small className="text-muted">{new Date(post.createdAt).toLocaleDateString()}</small>
+                    <h5 className="card-title mt-2">{post.title}</h5>
+                    <p className="card-text">{post.content.substring(0, 100)}...</p>
+                    {/* <p className="text-muted mb-2">Written by: <b>{post.advocate?.name || "Unknown"}</b></p> */}
+                    <Link to={`/blog/${post._id}`} className="text-primary text-decoration-none">
+                      Read More →
+                    </Link>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <div className="text-center mt-4">
           <Link 

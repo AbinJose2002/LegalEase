@@ -11,10 +11,12 @@ export default function AdvancePaymentSuccess() {
     useEffect(() => {
       const advanceFeeUpdate = async () => {
         try {
-          const caseId = case_id.case_id
-          const res = await axios.post("http://localhost:8080/api/payment/update",{caseId})
+          console.log(case_id)
+          const res = await axios.post("http://localhost:8080/api/payment/update",{case_id})
           if(res.status){
-            navigate('/userdash')
+            setTimeout(()=>{
+              navigate('/userdash')
+            }, 4000)
           }
         } catch (error) {
           console.log(error)

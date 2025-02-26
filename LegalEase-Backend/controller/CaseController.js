@@ -29,15 +29,19 @@ const fetchCase = async (req, res) => {
         const decodedToken = jwt.verify(advToken, process.env.JWT_SECRET);
 
         // Fetch clients where advocate_id matches
-        let clients = await CaseModel.find({ advocate_id: decodedToken.id });
-
+        let clients = await CaseModel.find({
+            $or: [
+              { advocate_id: decodedToken.id },
+              { client_id: decodedToken.id }
+            ]
+          });
+          
         // Fetch user details for each client
         for (let i = 0; i < clients.length; i++) {
             const user = await userModal.findById(clients[i].client_id);
             clients[i] = clients[i].toObject(); // Convert Mongoose document to plain object
             clients[i].userDetails = user ? user.toObject() : null; // Append user data
         }
-
         res.json({ success: "true", clients });
     } catch (error) {
         console.error(error);
