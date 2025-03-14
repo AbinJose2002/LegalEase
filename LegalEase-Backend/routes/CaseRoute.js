@@ -1,5 +1,5 @@
 import express from 'express';
-import {caseConfirm, caseReject, fetchCase, fetchCaseUser, submitCase} from '../controller/CaseController.js'
+import {caseConfirm, caseReject, fetchCase, fetchCaseUser, submitCase,getCasesForUser, getDocumentsForUser} from '../controller/CaseController.js'
 
 const caseRouter = express.Router();
 
@@ -8,5 +8,8 @@ caseRouter.post("/view", fetchCase)
 caseRouter.post("/view-user", fetchCaseUser)
 caseRouter.post("/confirm", caseConfirm)
 caseRouter.post("/reject", caseReject)
+
+caseRouter.get("/user/cases", getCasesForUser);
+caseRouter.get("/user/documents/:caseId", getDocumentsForUser);
 
 export default caseRouter;

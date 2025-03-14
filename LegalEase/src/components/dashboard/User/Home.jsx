@@ -1,5 +1,5 @@
 // src/components/Dashboard.js
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from '../../Navbar/Navbar'
@@ -7,10 +7,12 @@ import Case from './Case';
 import Profile from './Profile';
 import Payment from './Payment';
 import Document from './Document';
+import Consultation from './Consultation';
 
 const Home = () => {
     const [selected, setSelected] = useState('case'); // Default selected link
-
+    
+    
     return (
         <>
             <Navbar />
@@ -28,6 +30,8 @@ const Home = () => {
             return <Payment />;
         case 'document':
             return <Document />;
+        case 'consult':
+            return <Consultation />;
         default:
             return <Case />;
     }

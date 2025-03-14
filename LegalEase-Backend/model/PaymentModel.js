@@ -7,7 +7,7 @@ const paySchema = new mongoose.Schema({
     },
     type: {
         type: String,
-        enum: ["advance", "Sitting"], 
+        enum: ["advance", "Sitting", "Consultation"], 
         required: true
     },
     status: {

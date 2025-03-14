@@ -38,6 +38,10 @@ const advocateSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    consultationFee: {
+        type: Number,
+        required: true
+    },
     image: {
         type: String
     },
@@ -47,4 +51,6 @@ const advocateSchema = new mongoose.Schema({
         default: Date.now 
     }
 }, { timestamps: false }); 
-export default mongoose.model('advocate', advocateSchema);
+
+const AdvocateModel = mongoose.model('advocate', advocateSchema);
+export default AdvocateModel

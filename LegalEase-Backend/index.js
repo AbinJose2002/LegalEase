@@ -7,6 +7,8 @@ import advocateRouter from './routes/AdvocateRoute.js'
 import caseRouter from './routes/CaseRoute.js'
 import paymentRoute from './routes/PaymentRoute.js'
 import blogRouter from './routes/BlogRoute.js'
+import documentRouter from './routes/DocumentRoute.js'
+import consultationRoute from './routes/ConsultationRoutes.js'
 
 const PORT = 8080
 app.use(cors())
@@ -23,6 +25,8 @@ app.use('/api/advocate/',advocateRouter)
 app.use('/api/case/',caseRouter)
 app.use('/api/payment/',paymentRoute)
 app.use('/api/blogs/',blogRouter)
+app.use('/api/documents/',documentRouter)
+app.use('/api/consultations/',consultationRoute)
 
 
 //checking the get 8080

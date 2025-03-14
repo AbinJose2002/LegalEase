@@ -17,11 +17,11 @@ const userLogin = async (req, res) => {
             res.json({ success: false, message: 'Email and password not matching' })
         }
         const token = createToken(user._id)
-        console.log(token)
+        // console.log(token)
         
         res.json({ success: true, data: token })
     } catch (error) {
-        console.log('hi');
+        // console.log('hi');
         console.log(error)
         res.json({ success: false, message: "Internal server error!" })
     }
@@ -58,7 +58,7 @@ const userRegister = async (req, res) => {
 
 const fetchUser = async (req, res) => {
     const token = req.body.token;
-    console.log(token)
+    // console.log(token)
     try {
         const decodedToken = jwt.verify(token, process.env.JWT_SECRET)
         const userId = decodedToken.id;
@@ -83,7 +83,7 @@ const userUpdate = async (req, res) => {
         if (req.body.newPassword) {
             const isMatch = await bcrypt.compare(req.body.currentPassword, user.password);
             if (!isMatch) {
-                console.log(isMatch)
+                // console.log(isMatch)
                 return res.status(400).json({ message: 'Current password is incorrect' });
             }
             user.password = await bcrypt.hash(req.body.newPassword, 10);

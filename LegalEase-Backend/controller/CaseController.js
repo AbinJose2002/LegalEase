@@ -3,6 +3,7 @@ import { userModal } from '../model/UserModel.js';
 import jwt from 'jsonwebtoken';
 
 import dotenv from 'dotenv'
+import DocumentModel from '../model/DocumentModel.js';
 dotenv.config()
 
 const submitCase = async (req, res) => {
@@ -53,10 +54,10 @@ const fetchCaseUser = async (req, res) => {
     try {
         const advToken = req.body.advToken;
         const decodedToken = jwt.verify(advToken, process.env.JWT_SECRET);
-
+        
         // Fetch clients where advocate_id matches
         let clients = await CaseModel.find({ client_id: decodedToken.id });
-
+        
         // Fetch user details for each client
         for (let i = 0; i < clients.length; i++) {
             const user = await userModal.findById(clients[i].client_id);
@@ -90,7 +91,7 @@ const caseConfirm = async (req, res) => {
 const caseReject = async (req, res) => {
     try {
         const caseNum = req.body.caseNum
-        console.log(caseNum)
+        // console.log(caseNum)
         const caseDetail = await CaseModel.findOne({ _id: caseNum });
 
         await caseDetail.deleteOne()
@@ -100,6 +101,44 @@ const caseReject = async (req, res) => {
         res.json({ success: 'false', message: "Case confirmed Unsuccess" })
     }
 }
+
+const getUserId = (req) => {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (!token) return null;
+    
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        return decoded.id;
+    } catch (error) {
+        return null;
+    }
+};
+
+// Get Cases Assigned to the User
+export const getCasesForUser = async (req, res) => {
+    const userId = getUserId(req);
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
+
+    try {
+        const cases = await CaseModel.find({ client_id: userId });
+        res.status(200).json({ cases });
+    } catch (error) {
+        console.log(error)
+        res.status(500).json({ message: "Error fetching cases", error });
+    }
+};
+
+// Get Documents for Selected Case
+export const getDocumentsForUser = async (req, res) => {
+    const { caseId } = req.params;
+
+    try {
+        const documents = await DocumentModel.find({ caseId });
+        res.status(200).json({ documents });
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching documents", error });
+    }
+};
 
 
 

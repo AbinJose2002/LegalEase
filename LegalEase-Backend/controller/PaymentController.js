@@ -137,5 +137,37 @@ const addPayment = async (req, res) => {
     }
 }
 
+export const handleStripeWebhook = async (req, res) => {
+    const sig = req.headers["stripe-signature"];
+
+    try {
+        const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
+
+        if (event.type === "checkout.session.completed") {
+            const session = event.data.object;
+
+            // Find payment record
+            const payment = await PaymentModel.findOne({ stripePaymentId: session.id });
+
+            if (payment) {
+                // Update payment status
+                payment.status = "Completed";
+                await payment.save();
+
+                // Update consultation status to "Paid"
+                await ConsultationModel.findByIdAndUpdate(payment.case_id, { status: "Paid" });
+
+                console.log("✅ Payment successful for consultation:", payment.case_id);
+            }
+        }
+
+        res.json({ received: true });
+    } catch (err) {
+        console.error("⚠️ Webhook Error:", err);
+        res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+};
+
+
 
 export { acceptAdvance, paymentUpdate, fetchPaymentByCase, addPayment, acceptSitting }

@@ -111,8 +111,8 @@ const advocateLogin = async (req, res) => {
 
         res.json({ success: true, data: token })
     } catch (error) {
-        console.log('hi');
-        console.log(error)
+        // console.log('hi');
+        // console.log(error)
         res.json({ success: false, message: "Internal server error!" })
     }
 }
