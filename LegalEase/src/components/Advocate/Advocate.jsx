@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import advocate from '../../assets/advocate.jpg';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import '../../styles/animations.css';
 
 const Advocate = () => {
   const [selectedAdvocate, setSelectedAdvocate] = useState(null);
@@ -54,9 +55,13 @@ const Advocate = () => {
         </div>
 
         <div className="row g-4">
-          {advocates.map((advocate) => (
-            <div key={advocate.id} className="col-md-4">
-              <div className="card h-100 p-4">
+          {advocates.map((advocate, index) => (
+            <div 
+              key={advocate.id} 
+              className="col-md-4 fade-in"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
+              <div className="card h-100 p-4 hover-lift">
                 <div className="text-center">
                   <img
                     src={`http://localhost:8080/uploads/${advocate.image}`}
@@ -93,8 +98,8 @@ const Advocate = () => {
         </div>
 
         <div className="modal fade" id="advocateModal" tabIndex="-1" aria-hidden="true">
-          <div className="modal-dialog">
-            <div className="modal-content">
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content slide-in-up">
               <div className="modal-header">
                 <h5 className="modal-title">
                   {selectedAdvocate

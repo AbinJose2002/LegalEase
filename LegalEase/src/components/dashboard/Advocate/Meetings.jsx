@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import '../../../styles/animations.css';
 
 export default function Meetings() {
     const [meetings, setMeetings] = useState([]);
@@ -31,7 +32,7 @@ export default function Meetings() {
     if (error) return <div className="alert alert-danger">{error}</div>;
 
     return (
-        <div>
+        <div className="fade-in">
             <h2>Scheduled Meetings</h2>
             <div className="table-responsive">
                 <table className="table table-striped">
@@ -51,8 +52,12 @@ export default function Meetings() {
                                 <td colSpan="6" className="text-center">No meetings scheduled</td>
                             </tr>
                         ) : (
-                            meetings.map((meeting) => (
-                                <tr key={meeting._id}>
+                            meetings.map((meeting, index) => (
+                                <tr 
+                                    key={meeting._id}
+                                    className="slide-in-right"
+                                    style={{ animationDelay: `${index * 0.1}s` }}
+                                >
                                     <td>{new Date(meeting.date).toLocaleDateString()}</td>
                                     <td>{meeting.timeSlot}</td>
                                     <td>{`${meeting.clientDetails?.firstName} ${meeting.clientDetails?.lastName}`}</td>

@@ -1,7 +1,12 @@
 .navbar {
   padding: 1rem 0;
-  transition: all 0.3s ease;
+  transition: transform 0.3s ease, background-color 0.3s ease;
   position: relative;
+  transform: translateY(0);
+}
+
+.navbar.scrolled {
+  transform: translateY(-100%);
 }
 
 .brand-text {
@@ -15,10 +20,26 @@
   font-weight: 500;
   margin: 0 0.5rem;
   transition: color 0.3s ease;
+  position: relative;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  width: 0;
+  height: 2px;
+  bottom: 0;
+  left: 0;
+  background-color: #3498db;
+  transition: width 0.3s ease;
 }
 
 .nav-link:hover {
   color: #3498db !important;
+}
+
+.nav-link:hover::after {
+  width: 100%;
 }
 
 .navbar-toggler {
@@ -35,11 +56,14 @@
   border-color: #3498db;
   padding: 0.5rem 1.5rem;
   font-weight: 500;
+  transition: all 0.3s ease;
+  transform: scale(1);
 }
 
 .btn-primary:hover {
   background-color: #2980b9;
   border-color: #2980b9;
+  transform: scale(1.05);
 }
 
 @media (max-width: 991.98px) {
@@ -50,4 +74,4 @@
   .nav-link {
     padding: 0.5rem 0;
   }
-} 
+}
