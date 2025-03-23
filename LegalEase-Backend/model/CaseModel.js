@@ -3,7 +3,8 @@ import mongoose from "mongoose";
 const caseSchema = new mongoose.Schema({
   case_id: { 
     type: String,
-    unique: true 
+    unique: true,
+    sparse: true // This allows documents without case_id while maintaining uniqueness
   },
   client_id: { 
     type: String, 

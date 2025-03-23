@@ -1,7 +1,7 @@
 // src/components/Dashboard.js
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
-import AdvocateSidebar from './AdvocateSidebar';
+import AdvocateSidebar from './AdvocateSidebar.jsx';
 import Navbar from '../../Navbar/Navbar'
 import Client from './Client';
 import Profile from './Profile';
@@ -9,6 +9,7 @@ import Payment from './Payment';
 import Document from './Document';
 import Case from './Case';
 import Blog from './Blog';
+import Meetings from './Meetings';
 
 const AdvocateHome = () => {
     const [selected, setSelected] = useState('client'); // Default selected link
@@ -34,6 +35,8 @@ const AdvocateHome = () => {
                                 return <Document />;
                             case 'blog':
                                 return <Blog />;
+                            case 'meetings':
+                                return <Meetings />;
                             default:
                                 return <Client />;
                         }

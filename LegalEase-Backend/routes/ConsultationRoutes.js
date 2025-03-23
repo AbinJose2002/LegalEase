@@ -1,5 +1,5 @@
 import express from "express";
-import { getBookedSlots, requestConsultation, acceptConsultation, initiateConsultationPayment, scheduleMeeting, fetchConsultation } from "../controller/ConsultationController.js"
+import { getBookedSlots, requestConsultation, acceptConsultation, initiateConsultationPayment, scheduleMeeting, fetchConsultation, getAdvocateMeetings } from "../controller/ConsultationController.js"
 
 const consultationRoute = express.Router();
 
@@ -19,5 +19,7 @@ consultationRoute.post("/initiate-payment", initiateConsultationPayment);
 consultationRoute.post("/schedule", scheduleMeeting);
 
 consultationRoute.post("/confirmed", fetchConsultation);
+
+consultationRoute.post('/advocate-meetings', getAdvocateMeetings);
 
 export default consultationRoute;

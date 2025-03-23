@@ -7,7 +7,7 @@ import DocumentModel from '../model/DocumentModel.js';
 dotenv.config()
 
 const submitCase = async (req, res) => {
-    const { caseNum, caseName, caseDesc, advocate, client_id } = req.body.caseDetails
+    const { caseName, caseDesc, advocate, client_id } = req.body.caseDetails
 
     try {
         const decodedToken = jwt.verify(client_id, process.env.JWT_SECRET);
@@ -15,7 +15,20 @@ const submitCase = async (req, res) => {
         if (!clientToken) {
             return res.status(404).json({ success: "false", message: "Client not found" });
         }
-        const newCase = new CaseModel({ case_id: caseNum, client_id: clientToken, advocate_id: advocate, case_title: caseName, case_description: caseDesc });
+
+        // Create temporary case ID
+        const timestamp = Date.now();
+        const tempCaseId = `TEMP${timestamp}`;
+
+        const newCase = new CaseModel({
+            case_id: tempCaseId, // Use temporary ID until advocate confirms
+            client_id: clientToken, 
+            advocate_id: advocate._id, 
+            case_title: caseName, 
+            case_description: caseDesc,
+            status: 'Not Approved'
+        });
+        
         await newCase.save();
         res.json({ success: "true", message: "Case submitted successfully" });
     } catch (error) {
@@ -74,17 +87,33 @@ const fetchCaseUser = async (req, res) => {
 
 const caseConfirm = async (req, res) => {
     try {
-        const caseNum = req.body.caseNum
-        const caseDetail = await CaseModel.findOne({ _id: caseNum });
-
-        if (caseDetail) {
-            caseDetail.status = "In Progress"; // Update the status
-            await caseDetail.save(); // Save changes to the database
+        const { caseNum, case_id } = req.body;
+        
+        // Check if case_id already exists
+        const existingCase = await CaseModel.findOne({ case_id: case_id });
+        if (existingCase) {
+            return res.json({ 
+                success: "false", 
+                message: "Case ID already exists. Please use a different number." 
+            });
         }
 
-        res.json({success:"true"})
+        const caseDetail = await CaseModel.findById(caseNum);
+        if (!caseDetail) {
+            return res.json({ 
+                success: "false", 
+                message: "Case not found" 
+            });
+        }
+
+        caseDetail.status = "In Progress";
+        caseDetail.case_id = case_id;
+        await caseDetail.save();
+
+        res.json({ success: "true", message: "Case confirmed successfully" });
     } catch (error) {
-        res.json({ success: 'false', message: "Case confirmed Unsuccess" })
+        console.error(error);
+        res.json({ success: "false", message: "Case confirmation failed" });
     }
 }
 

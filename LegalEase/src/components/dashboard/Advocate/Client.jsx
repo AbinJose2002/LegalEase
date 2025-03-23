@@ -5,7 +5,8 @@ export default function Client() {
   const [clientDetails, setClientDetails] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [caseNum, setCaseNum] = useState('')
+  const [caseNum, setCaseNum] = useState('');
+  const [enteredCaseNumber, setEnteredCaseNumber] = useState(''); // Add this new state
 
   useEffect(() => {
     const fetchClientDetails = async () => {
@@ -28,16 +29,26 @@ export default function Client() {
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
 
-  const confirmCase = async (caseNum) => {
+  const confirmCase = async (caseNum, case_id) => {
+    if (!case_id) {
+        alert("Please enter a valid case number");
+        return;
+    }
     try {
-      const res = await axios.post('http://localhost:8080/api/case/confirm', { caseNum })
-      if (res.status) {
-        alert("Confirmed Case")
-      }
+        const res = await axios.post('http://localhost:8080/api/case/confirm', { 
+            caseNum, 
+            case_id 
+        });
+        if (res.data.success === "true") {
+            alert("Case confirmed successfully");
+            window.location.reload();
+        }
     } catch (error) {
-      console.log(error)
+        console.log(error);
+        alert("Error confirming case");
     }
   }
+
   const rejectCase = async (caseNum) => {
     try {
       const res = await axios.post('http://localhost:8080/api/case/reject', { caseNum })
@@ -104,18 +115,42 @@ export default function Client() {
         <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-body">
-              <p>Are you sure to confirm this case?</p>
-              <p>Case Number: {caseNum.case_id}</p>
-              <p>Case Number: {caseNum.case_title}</p>
-              <p>Case Number: {caseNum.case_description}</p>
+              <h5>Case Details</h5>
+              <p>Case Title: {caseNum.case_title}</p>
+              <p>Case Description: {caseNum.case_description}</p>
+              
+              <div className="form-group mt-3">
+                <label htmlFor="case_number" className="form-label">Assign Case Number</label>
+                <div className="input-group">
+                    <span className="input-group-text">CASE</span>
+                    <input 
+                        type="text" 
+                        className="form-control" 
+                        id="case_number"
+                        name="case_number"
+                        placeholder="Enter case number (e.g., 2023001)"
+                        value={enteredCaseNumber}
+                        onChange={(e) => setEnteredCaseNumber(e.target.value)}
+                        required
+                    />
+                </div>
+                <small className="text-muted">Format: CASE will be prefixed automatically</small>
+              </div>
             </div>
             <div className="modal-footer">
               <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-              <button type="button" className="btn btn-danger" onClick={() => { confirmCase(caseNum._id) }}>Confirm Case</button>
+              <button 
+                type="button" 
+                className="btn btn-success" 
+                onClick={() => confirmCase(caseNum._id, `CASE${enteredCaseNumber}`)}
+              >
+                Confirm Case
+              </button>
             </div>
           </div>
         </div>
       </div>
+
       <div className="modal fade" id="rejectModal" tabIndex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div className="modal-dialog">
           <div className="modal-content">

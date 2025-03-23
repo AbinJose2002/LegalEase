@@ -1,6 +1,8 @@
 import ConsultationModel from "../model/ConsultationModel.js";
 import PaymentModel from "../model/PaymentModel.js";
 import AdvocateModel from "../model/AdvocateModel.js";
+import { userModal } from "../model/UserModel.js";
+import CaseModel from "../model/CaseModel.js";
 import jwt from "jsonwebtoken";
 import Stripe from "stripe";
 
@@ -151,4 +153,44 @@ export const fetchConsultation = async (req, res) => {
     } catch (error) {
         res.json({ success: "false" })
     }
-}
+};
+
+export const getAdvocateMeetings = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Fetch meetings for this advocate
+        let meetings = await ConsultationModel.find({
+            advocateId: decodedToken.id,
+            status: "Scheduled"
+        }).lean(); // Use lean() for better performance since we're modifying the objects
+
+        // Fetch additional details for each meeting
+        const enrichedMeetings = await Promise.all(meetings.map(async (meeting) => {
+            // Get client details
+            const client = await userModal.findById(meeting.clientId).lean();
+            
+            // Get case details if there's a case associated
+            let caseDetails = null;
+            if (meeting.caseId) {
+                caseDetails = await CaseModel.findById(meeting.caseId).lean();
+            }
+
+            return {
+                ...meeting,
+                clientDetails: client || {},
+                caseDetails: caseDetails || {}
+            };
+        }));
+
+        res.json({ success: "true", meetings: enrichedMeetings });
+    } catch (error) {
+        console.error("Error in getAdvocateMeetings:", error);
+        res.status(500).json({ 
+            success: "false", 
+            message: "Error fetching meetings",
+            error: error.message 
+        });
+    }
+};

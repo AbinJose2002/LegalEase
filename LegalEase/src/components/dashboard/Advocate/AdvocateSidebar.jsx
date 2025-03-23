@@ -1,11 +1,10 @@
-// src/components/Sidebar.js
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faArrowRight, faFileAlt, faMoneyBill, faFolder, faBlog, faUser  } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faArrowRight, faFileAlt, faMoneyBill, faFolder, faBlog, faUser, faVideo } from '@fortawesome/free-solid-svg-icons';
 import './Sidebar.css'; // Import the CSS file
 
-const AdvocateSidebar = ({ setSelected }) => {
+function AdvocateSidebar({ setSelected }) {
     const [isCollapsed, setIsCollapsed] = useState(false);
 
     const toggleSidebar = () => {
@@ -43,9 +42,13 @@ const AdvocateSidebar = ({ setSelected }) => {
                     <FontAwesomeIcon icon={faUser } style={{ marginRight: '10px', display: isCollapsed ? 'none' : 'block' }} />
                     <Link style={{ display: isCollapsed ? 'none' : 'block' }}>Profile</Link>
                 </li>
+                <li onClick={() => setSelected('meetings')}>
+                    <FontAwesomeIcon icon={faVideo} style={{ marginRight: '10px', display: isCollapsed ? 'none' : 'block' }} />
+                    <Link style={{ display: isCollapsed ? 'none' : 'block' }}>Meetings</Link>
+                </li>
             </ul>
         </div>
     );
-};
+}
 
 export default AdvocateSidebar;

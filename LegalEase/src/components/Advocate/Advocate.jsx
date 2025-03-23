@@ -6,7 +6,6 @@ import axios from 'axios';
 
 const Advocate = () => {
   const [selectedAdvocate, setSelectedAdvocate] = useState(null);
-  const [caseNum, setCaseNum] = useState('')
   const [caseName, setCaseName] = useState('')
   const [caseDesc, setCaseDesc] = useState('')
 
@@ -25,25 +24,22 @@ const Advocate = () => {
     fetchAdvocates();
   }, [])
 
-  const submitCase = async () =>{
+  const submitCase = async () => {
     try {
       const caseDetails = {
-        caseNum,
         caseName,
         caseDesc,
         advocate: selectedAdvocate,
         client_id: localStorage.usertoken
       }
-      console.log(selectedAdvocate)
-      console.log(caseDetails)
       const res = await axios.post("http://localhost:8080/api/case/submit", {caseDetails})
-      if(res.status){
-        console.log('success')
-        alert('Success')
+      if(res.data.success === "true"){
+        alert(`Case submitted successfully!\nYour Case ID is: ${res.data.caseId}\nPlease save this ID for future reference.`);
         window.location.href = 'http://localhost:5173/'
       }
     } catch (error) {
       console.log(error)
+      alert('Failed to submit case. Please try again.')
     }
   }
 
@@ -204,10 +200,6 @@ const Advocate = () => {
                 <div className="modal-body">
                   {selectedAdvocate && (
                     <>
-                      <label htmlFor="caseno" className="form-label">Case Number
-                      </label>
-                      <input type="text" name="casenum" className='form-control' value={caseNum} onChange={(e)=>{setCaseNum(e.target.value)}} />
-                      
                       <label htmlFor="casename" className="form-label">Case Name
                       </label>
                       <input type="text" name="casename" className='form-control' value={caseName} onChange={(e)=>{setCaseName(e.target.value)}} />
