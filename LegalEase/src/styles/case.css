@@ -1,0 +1,60 @@
+.case-container {
+  padding: 1rem;
+}
+
+.case-header {
+  position: relative;
+}
+
+.case-header::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 0;
+  width: 50px;
+  height: 3px;
+  background: linear-gradient(90deg, #3498db, #2ecc71);
+  transition: width 0.3s ease;
+}
+
+.case-header:hover::after {
+  width: 100px;
+}
+
+.table {
+  margin-top: 1rem;
+  border-collapse: separate;
+  border-spacing: 0 8px;
+}
+
+.table tr {
+  transition: all 0.3s ease;
+}
+
+.table tr:hover {
+  transform: translateX(5px);
+  background-color: rgba(52, 152, 219, 0.05) !important;
+}
+
+.badge {
+  transition: all 0.3s ease;
+  font-weight: 500;
+  padding: 0.5em 0.8em;
+}
+
+.badge:hover {
+  transform: scale(1.1);
+}
+
+.btn-sm {
+  transition: all 0.3s ease;
+  border-radius: 20px;
+  padding: 0.4rem 1rem;
+}
+
+.table-responsive {
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 15px;
+  padding: 1rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}

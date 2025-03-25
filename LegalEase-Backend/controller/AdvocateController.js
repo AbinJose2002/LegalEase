@@ -7,13 +7,29 @@ dotenv.config()
 
 const advocateRegister = async (req, res) => {
     try {
-        const { firstName, lastName, specialization, email, password, phone, bio, advanceFee, sittingFee } = req.body;
+        console.log('Registration request body:', req.body);
+        console.log('Registration file:', req.file);
+
+        const { 
+            firstName, 
+            lastName, 
+            email, 
+            password, 
+            phone, 
+            bio, 
+            advanceFee, 
+            sittingFee,
+            consultationFee 
+        } = req.body;
+
+        // Parse specialization from string back to array
+        const specialization = JSON.parse(req.body.specialization || '[]');
 
         // Validate required fields
         if (!firstName || !lastName || !email || !phone || !password) {
             return res.status(400).json({
                 success: false,
-                message: 'Please provide all required fields: firstName, lastName, email, phone, password'
+                message: 'Please provide all required fields'
             });
         }
 
@@ -30,10 +46,6 @@ const advocateRegister = async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-
-        // Handle image upload (store only filename)
-        const imagePath = req.file ? req.file.filename : null;
-
         // Create new advocate
         const newAdvocate = new AdvocateModel({
             firstName,
@@ -43,41 +55,27 @@ const advocateRegister = async (req, res) => {
             password: hashedPassword,
             bio,
             specialization,
-            image: imagePath, // Only storing filename
-            advanceFee,
-            sittingFee,
+            image: req.file ? req.file.filename : null,
+            advanceFee: Number(advanceFee),
+            sittingFee: Number(sittingFee),
+            consultationFee: Number(consultationFee),
             verified: false
         });
 
-        // Save advocate to database
         const savedAdvocate = await newAdvocate.save();
-
-        // Create JWT token
         const token = createToken(savedAdvocate._id);
-
-        // Remove password before sending response
-        const { password: _, ...advocateData } = savedAdvocate.toObject();
 
         res.status(201).json({
             success: true,
-            message: 'Advocate registered successfully',
-            token,
-            advocate: advocateData
+            message: 'Registration successful! Please wait for admin approval.',
+            token
         });
 
     } catch (error) {
         console.error('Registration error:', error);
-
-        let errorMessage = 'Registration failed';
-        if (error.name === 'ValidationError') {
-            errorMessage = Object.values(error.errors).map(val => val.message).join(', ');
-        } else if (error.code === 11000) {
-            errorMessage = 'Email already exists';
-        }
-
         res.status(500).json({
             success: false,
-            message: errorMessage || 'Internal server error'
+            message: error.message || 'Registration failed'
         });
     }
 };
@@ -132,5 +130,64 @@ const fetchAdvocates = async (req, res) => {
         });
     }
 }
+
+export const getProfile = async (req, res) => {
+    try {
+        const { token } = req.body;
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        
+        const advocate = await AdvocateModel.findById(decodedToken.id)
+            .select('-password'); // Exclude password from response
+        
+        if (!advocate) {
+            return res.status(404).json({
+                success: "false",
+                message: "Advocate not found"
+            });
+        }
+
+        res.json({
+            success: "true",
+            advocate
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: "false",
+            message: "Error fetching profile",
+            error: error.message
+        });
+    }
+};
+
+export const updateProfile = async (req, res) => {
+    try {
+        const { token, ...updateData } = req.body;
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        
+        const advocate = await AdvocateModel.findByIdAndUpdate(
+            decodedToken.id,
+            updateData,
+            { new: true, select: '-password' }
+        );
+
+        if (!advocate) {
+            return res.status(404).json({
+                success: "false",
+                message: "Advocate not found"
+            });
+        }
+
+        res.json({
+            success: "true",
+            advocate
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: "false",
+            message: "Error updating profile",
+            error: error.message
+        });
+    }
+};
 
 export { advocateRegister, advocateLogin, fetchAdvocates };

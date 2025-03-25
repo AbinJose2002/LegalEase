@@ -2,7 +2,7 @@ import express from 'express';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
-import { advocateRegister, advocateLogin, fetchAdvocates } from '../controller/AdvocateController.js';
+import { advocateRegister, advocateLogin, fetchAdvocates, getProfile, updateProfile } from '../controller/AdvocateController.js';
 
 // Ensure 'uploads' directory exists
 const uploadDir = 'uploads';
@@ -26,6 +26,9 @@ const advocateRouter = express.Router();
 
 advocateRouter.post('/login', advocateLogin);
 advocateRouter.post('/register', upload.single('image'), advocateRegister);
+advocateRouter.get('/', fetchAdvocates); // Add this new route
 advocateRouter.get('/fetch', fetchAdvocates);
+advocateRouter.post('/get-profile', getProfile);
+advocateRouter.post('/update-profile', updateProfile);
 
 export default advocateRouter;

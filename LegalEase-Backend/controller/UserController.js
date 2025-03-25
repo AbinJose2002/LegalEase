@@ -97,4 +97,13 @@ const userUpdate = async (req, res) => {
     }
 };
 
-export { userLogin, userRegister, fetchUser, userUpdate };
+const getAllUsers = async (req, res) => {
+    try {
+        const users = await userModal.find().select('-password');
+        res.json({ success: true, data: users });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error fetching users" });
+    }
+};
+
+export { userLogin, userRegister, fetchUser, userUpdate, getAllUsers };

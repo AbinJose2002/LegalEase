@@ -42,6 +42,10 @@ const advocateSchema = new mongoose.Schema({
         type: Number,
         required: true
     },
+    experience: {
+        type: Number,  // Changed from String to Number
+        required: true
+    },
     image: {
         type: String
     },

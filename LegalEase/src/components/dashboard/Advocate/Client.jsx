@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import '../../../styles/animations.css';
 
 export default function Client() {
   const [clientDetails, setClientDetails] = useState([]);
@@ -61,8 +62,8 @@ export default function Client() {
   }
 
   return (
-    <div>
-      <h2>Client Details</h2>
+    <div className="fade-in">
+      <h2 className="mb-4 scale-in">Client Details</h2>
       <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '20px' }}>
         <thead>
           <tr style={{ backgroundColor: '#f2f2f2', textAlign: 'left' }}>
@@ -77,8 +78,12 @@ export default function Client() {
         <tbody>
           {clientDetails
             .filter(client => client.status === 'Not Approved') // Filter clients
-            .map(client => (
-              <tr key={client.id} style={{ borderBottom: '1px solid #ddd' }}>
+            .map((client, index) => (
+              <tr 
+                key={client.id} 
+                style={{ borderBottom: '1px solid #ddd' }}
+                className="table-row-animation"
+              >
                 <td style={{ padding: '10px' }}>{client.case_id}</td>
                 <td style={{ padding: '10px' }}>{client.case_title}</td>
                 <td style={{ padding: '10px' }}>{client.case_description}</td>
@@ -113,7 +118,7 @@ export default function Client() {
 
       <div className="modal fade" id="confirmModal" tabIndex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div className="modal-dialog">
-          <div className="modal-content">
+          <div className="modal-content modal-animation">
             <div className="modal-body">
               <h5>Case Details</h5>
               <p>Case Title: {caseNum.case_title}</p>
@@ -153,7 +158,7 @@ export default function Client() {
 
       <div className="modal fade" id="rejectModal" tabIndex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div className="modal-dialog">
-          <div className="modal-content">
+          <div className="modal-content modal-animation">
             <div className="modal-body">
               <p>Are you sure to reject this case?</p>
               <p>Case Number: {caseNum.case_id}</p>

@@ -66,61 +66,110 @@ export default function Payment() {
   }
 
   return (
-    <div>
-      <h2>Payment</h2>
+    <div className="container mt-4 fade-in">
+      <div className="card shadow-sm border-0 p-4">
+        <h2 className="display-6 fw-bold mb-4 text-gradient">Payment Management</h2>
 
-      {loading && <p>Loading cases...</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+        {loading && (
+          <div className="text-center p-4">
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="alert alert-danger slide-in-right">
+            <i className="fas fa-exclamation-circle me-2"></i>
+            {error}
+          </div>
+        )}
 
-      <select className="form-select mb-3" aria-label="Select a case" onChange={handleChange}>
-        <option value="">Select a case</option>
-        {cases.map((caseItem) => (
-          <option key={caseItem._id} value={caseItem._id}>
-            {caseItem.case_title}
-          </option>
-        ))}
-      </select>
+        <select 
+          className="form-select mb-4 hover-lift"
+          aria-label="Select a case" 
+          onChange={handleChange}
+          style={{
+            transition: 'all 0.3s ease',
+            cursor: 'pointer'
+          }}
+        >
+          <option value="">Select a case</option>
+          {cases.map((caseItem) => (
+            <option key={caseItem._id} value={caseItem._id}>
+              {caseItem.case_title}
+            </option>
+          ))}
+        </select>
 
-      {selectedCase && (
-        <div>
-          <h3>Payments for Case: {selectedCase}</h3>
-        </div>
-      )}
-
-      {payments.length > 0 ? (
-        <table className="table table-bordered mt-3">
-          <thead className="table-dark">
-            <tr>
-              <th>#</th>
-              <th>Type</th>
-              <th>Status</th>
-              <th>Amount</th>
-              <th>Payment Date</th>
-              <th>Operations</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((payment, index) => (
-              <tr key={payment._id}>
-                <td>{index + 1}</td>
-                <td>{payment.type}</td>
-                <td>{payment.status}</td>
-                <td>{payment.amount}</td>
-                <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
-                <td>
-                  {payment.status === "Completed" ? 
-                    <button className='btn btn-success disabled'>Paid</button> : 
-                    <button className='btn btn-success' onClick={() => handlePay(payment._id)}>Pay Now</button>
-
-                  }
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : (
-        selectedCase && <p>No payments found for this case.</p>
-      )}
+        {payments.length > 0 ? (
+          <div className="table-responsive slide-in-bottom">
+            <table className="table table-hover">
+              <thead className="bg-light">
+                <tr>
+                  <th className="fw-semibold">#</th>
+                  <th className="fw-semibold">Type</th>
+                  <th className="fw-semibold">Status</th>
+                  <th className="fw-semibold">Amount</th>
+                  <th className="fw-semibold">Payment Date</th>
+                  <th className="fw-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {payments.map((payment, index) => (
+                  <tr key={payment._id}
+                      className="fade-in"
+                      style={{ 
+                        animationDelay: `${index * 0.1}s`,
+                        transition: 'transform 0.2s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.transform = 'translateX(5px)'}
+                      onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
+                  >
+                    <td>{index + 1}</td>
+                    <td>
+                      <span className="badge bg-info">
+                        <i className="fas fa-file-invoice-dollar me-1"></i>
+                        {payment.type}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`badge bg-${payment.status === 'Completed' ? 'success' : 'warning'}`}>
+                        <i className={`fas fa-${payment.status === 'Completed' ? 'check-circle' : 'clock'} me-1`}></i>
+                        {payment.status}
+                      </span>
+                    </td>
+                    <td className="fw-bold">₹{payment.amount}</td>
+                    <td>{new Date(payment.payment_date).toLocaleDateString()}</td>
+                    <td>
+                      {payment.status === "Completed" ? 
+                        <button className='btn btn-success btn-sm disabled'>
+                          <i className="fas fa-check me-1"></i>
+                          Paid
+                        </button> : 
+                        <button 
+                          className='btn btn-primary btn-sm hover-lift'
+                          onClick={() => handlePay(payment._id)}
+                        >
+                          <i className="fas fa-credit-card me-1"></i>
+                          Pay Now
+                        </button>
+                      }
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          selectedCase && (
+            <div className="text-center p-5 mt-4">
+              <i className="fas fa-file-invoice fa-3x text-muted mb-3"></i>
+              <h5 className="text-muted">No payments found for this case</h5>
+            </div>
+          )
+        )}
+      </div>
     </div>
   );
 }

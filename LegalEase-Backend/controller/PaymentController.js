@@ -1,4 +1,5 @@
 import Stripe from "stripe";
+import jwt from 'jsonwebtoken';
 import AdvocateModel from "../model/AdvocateModel.js";
 import CaseModel from "../model/CaseModel.js";
 import PaymentModel from "../model/PaymentModel.js";
@@ -168,6 +169,72 @@ export const handleStripeWebhook = async (req, res) => {
     }
 };
 
+const getAllPayments = async (req, res) => {
+    try {
+        const payments = await PaymentModel.find();
+        res.json({ success: true, data: payments });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error fetching payments" });
+    }
+};
 
+export const getAdvocateEarnings = async (req, res) => {
+    try {
+        const { token } = req.body;
+        if (!token) {
+            return res.status(401).json({
+                success: "false",
+                message: "No token provided"
+            });
+        }
 
-export { acceptAdvance, paymentUpdate, fetchPaymentByCase, addPayment, acceptSitting }
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Get all cases for this advocate
+        const cases = await CaseModel.find({ advocate_id: decodedToken.id });
+        if (!cases || cases.length === 0) {
+            return res.json({
+                success: "true",
+                totalEarnings: 0,
+                payments: []
+            });
+        }
+
+        // Convert cases ObjectIds to strings for comparison
+        const caseIds = cases.map(c => c._id);
+
+        // Get all completed payments for these cases
+        const payments = await PaymentModel.find({
+            case_id: { $in: caseIds.map(id => id.toString()) },
+            status: "Completed"
+        });
+
+        // Calculate total earnings safely
+        const totalEarnings = payments.reduce((sum, payment) => {
+            const amount = Number(payment.amount) || 0;
+            return sum + amount;
+        }, 0);
+
+        console.log({
+            advocateId: decodedToken.id,
+            casesFound: cases.length,
+            paymentsFound: payments.length,
+            totalEarnings
+        });
+
+        res.json({
+            success: "true",
+            totalEarnings,
+            payments
+        });
+    } catch (error) {
+        console.error('Error in getAdvocateEarnings:', error);
+        res.status(500).json({
+            success: "false",
+            message: "Error fetching earnings",
+            error: error.message || "Unknown error occurred"
+        });
+    }
+};
+
+export { acceptAdvance, paymentUpdate, fetchPaymentByCase, addPayment, acceptSitting, getAllPayments }

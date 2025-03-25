@@ -122,15 +122,45 @@ const NavigationBar = () => {
                                 Logout
                             </Button>
                             :
-                            <Button
-                                as={Link}
-                                to="/login"
-                                variant="primary"
-                                className="ms-lg-3 mt-2 mt-lg-0"
-                                onClick={() => setExpanded(false)}
-                            >
-                                Login
-                            </Button>
+                            <div className="dropdown">
+                                <button 
+                                    className="btn btn-primary dropdown-toggle ms-lg-3 mt-2 mt-lg-0" 
+                                    type="button" 
+                                    data-bs-toggle="dropdown" 
+                                    aria-expanded="false"
+                                >
+                                    Login As
+                                </button>
+                                <ul className="dropdown-menu">
+                                    <li>
+                                        <Link 
+                                            className="dropdown-item" 
+                                            to="/login"
+                                            onClick={() => setExpanded(false)}
+                                        >
+                                            Client Login
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link 
+                                            className="dropdown-item" 
+                                            to="/advocate-login"
+                                            onClick={() => setExpanded(false)}
+                                        >
+                                            Advocate Login
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link 
+                                            className="dropdown-item" 
+                                            to="/admin-login"
+                                            onClick={() => setExpanded(false)}
+                                        >
+                                            Admin Login
+                                        </Link>
+                                    </li>
+                                </ul>
+                            </div>
                         }
 
 

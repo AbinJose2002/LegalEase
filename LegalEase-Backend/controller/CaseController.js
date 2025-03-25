@@ -169,6 +169,13 @@ export const getDocumentsForUser = async (req, res) => {
     }
 };
 
+const getAllCases = async (req, res) => {
+    try {
+        const cases = await CaseModel.find();
+        res.json({ success: true, data: cases });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error fetching cases" });
+    }
+};
 
-
-export { submitCase, fetchCase, caseConfirm, fetchCaseUser, caseReject }
+export { submitCase, fetchCase, caseConfirm, fetchCaseUser, caseReject, getAllCases };

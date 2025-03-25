@@ -11,12 +11,15 @@ import AdvocateSuccess from './pages/AdvocateSuccess'
 import AdvancePaymentSuccess from './pages/AdvancePaymentSuccess'
 import PaymentSuccess from './pages/PaymentSuccess'
 import PaymentFailed from './pages/PaymentFailed'
+import Navbar from './components/Navbar/Navbar'
+import AdminLogin from './components/Auth/AdminLogin'
+import AdminDashboard from './components/dashboard/Admin/AdminDashboard'
 
 export default function App() {
   return (
     <div>
       <BrowserRouter>
-
+        <Navbar />
         <Routes>
           <Route path='/' element={<Body />}></Route>
           <Route path='/login' element={<Login />}></Route>
@@ -28,7 +31,9 @@ export default function App() {
           <Route path='/advocate-register-success' element={<AdvocateSuccess />}></Route>
           <Route path='/advance-payment-success/:pay_type/:pay_id/:case_id' element={<AdvancePaymentSuccess />}></Route>
           <Route path="/payment-success" element={<PaymentSuccess />} />
-                <Route path="/payment-failed" element={<PaymentFailed />} />
+          <Route path="/payment-failed" element={<PaymentFailed />} />
+          <Route path="/admin-login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
         </Routes>
       </BrowserRouter>
     </div>
