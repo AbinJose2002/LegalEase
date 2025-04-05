@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome, faArrowLeft, faArrowRight, faFileAlt, faMoneyBill, faFolder, faBlog, faUser, faVideo } from '@fortawesome/free-solid-svg-icons';
+import { faHome, faArrowLeft, faArrowRight, faFileAlt, faMoneyBill, faFolder, faBlog, faUser, faVideo, faStar } from '@fortawesome/free-solid-svg-icons';
 import './Sidebar.css'; // Import the CSS file
 
 function AdvocateSidebar({ selected, setSelected }) {
@@ -28,7 +28,8 @@ function AdvocateSidebar({ selected, setSelected }) {
                     { name: 'document', icon: faFolder, label: 'Document' },
                     { name: 'blog', icon: faBlog, label: 'Blog' },
                     { name: 'profile', icon: faUser, label: 'Profile' },
-                    { name: 'meetings', icon: faVideo, label: 'Meetings' }
+                    { name: 'meetings', icon: faVideo, label: 'Meetings' },
+                    { name: 'reviews', icon: faStar, label: 'Reviews' } // Add this new item
                 ].map(item => (
                     <li 
                         key={item.name}

@@ -7,33 +7,102 @@ import DocumentModel from '../model/DocumentModel.js';
 dotenv.config()
 
 const submitCase = async (req, res) => {
-    const { caseName, caseDesc, advocate, client_id } = req.body.caseDetails
-
+    console.log("Case submission request received:", req.body);
+    
     try {
-        const decodedToken = jwt.verify(client_id, process.env.JWT_SECRET);
-        const clientToken = decodedToken.id
-        if (!clientToken) {
-            return res.status(404).json({ success: "false", message: "Client not found" });
+        const { caseName, caseDesc, advocate, client_id, caseType } = req.body.caseDetails || {};
+
+        // Debug the received data with more detail
+        console.log("Received fields:", {
+            caseName: caseName,
+            caseDesc: caseDesc,
+            advocate: advocate?._id || 'NO ADVOCATE', 
+            client_id: client_id ? 'PRESENT' : 'MISSING',
+            caseType: caseType || 'MISSING',
+            rawCaseType: typeof caseType, // Log the actual type
+            entirePayload: JSON.stringify(req.body) // Log the entire payload
+        });
+
+        // Validate required fields
+        if (!caseName) {
+            return res.status(400).json({ success: "false", message: "Case title is required" });
+        }
+        
+        if (!advocate || !advocate._id) {
+            return res.status(400).json({ success: "false", message: "Advocate information is required" });
+        }
+        
+        if (!client_id) {
+            return res.status(400).json({ success: "false", message: "Client ID is required" });
         }
 
-        // Create temporary case ID
-        const timestamp = Date.now();
-        const tempCaseId = `TEMP${timestamp}`;
+        // Critical validation for caseType with fallback
+        let finalCaseType = caseType;
+        if (!finalCaseType) {
+            console.warn("caseType is missing from submission, defaulting to 'civil'");
+            finalCaseType = 'civil'; // Default value if missing
+        }
 
+        // Make sure it's one of the allowed types
+        const allowedTypes = ['criminal', 'civil', 'family', 'business', 'property', 'other'];
+        if (!allowedTypes.includes(finalCaseType)) {
+            console.warn(`Invalid caseType '${finalCaseType}', defaulting to 'civil'`);
+            finalCaseType = 'civil';
+        }
+
+        // Decode client token
+        let clientToken;
+        try {
+            const decodedToken = jwt.verify(client_id, process.env.JWT_SECRET);
+            clientToken = decodedToken.id;
+            if (!clientToken) {
+                return res.status(404).json({ success: "false", message: "Invalid client token" });
+            }
+        } catch (tokenError) {
+            console.error("Token verification error:", tokenError);
+            return res.status(401).json({ 
+                success: "false", 
+                message: "Invalid or expired token. Please login again." 
+            });
+        }
+
+        // Create case with required caseType
         const newCase = new CaseModel({
-            case_id: tempCaseId, // Use temporary ID until advocate confirms
-            client_id: clientToken, 
-            advocate_id: advocate._id, 
-            case_title: caseName, 
-            case_description: caseDesc,
+            case_id: `TEMP${Date.now()}`,
+            client_id: clientToken,
+            advocate_id: advocate._id,
+            case_title: caseName,
+            case_description: caseDesc || '',
+            caseType: finalCaseType, // Use our validated caseType value
             status: 'Not Approved'
         });
         
-        await newCase.save();
-        res.json({ success: "true", message: "Case submitted successfully" });
+        // Log before saving for debugging
+        console.log("About to save case with data:", {
+            case_title: newCase.case_title,
+            advocate_id: newCase.advocate_id,
+            caseType: newCase.caseType // Log to verify caseType is set
+        });
+        
+        const savedCase = await newCase.save();
+        
+        res.json({ 
+            success: "true", 
+            message: "Case submitted successfully",
+            caseId: savedCase._id
+        });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({ success: "false", message: "Internal server error" });
+        console.error("Case submission error:", error);
+        
+        // Enhanced error response
+        res.status(500).json({ 
+            success: "false", 
+            message: error.message || "Internal server error",
+            details: error.errors ? Object.keys(error.errors).map(key => ({
+                field: key,
+                message: error.errors[key].message
+            })) : null
+        });
     }
 }
 
@@ -85,37 +154,44 @@ const fetchCaseUser = async (req, res) => {
     }
 };
 
-const caseConfirm = async (req, res) => {
+export const caseConfirm = async (req, res) => {
+    const { caseNum, case_id, caseType } = req.body;
+    console.log("Received case data:", { caseNum, case_id, caseType });
+
     try {
-        const { caseNum, case_id } = req.body;
-        
-        // Check if case_id already exists
-        const existingCase = await CaseModel.findOne({ case_id: case_id });
-        if (existingCase) {
-            return res.json({ 
-                success: "false", 
-                message: "Case ID already exists. Please use a different number." 
+        if (!caseType) {
+            return res.status(400).json({
+                success: "false",
+                message: "Case type is required"
             });
         }
 
-        const caseDetail = await CaseModel.findById(caseNum);
-        if (!caseDetail) {
-            return res.json({ 
-                success: "false", 
-                message: "Case not found" 
+        const updatedCase = await CaseModel.findByIdAndUpdate(
+            caseNum,
+            { 
+                case_id: case_id,
+                status: "Open",
+                caseType: caseType 
+            },
+            { new: true }
+        );
+
+        if (!updatedCase) {
+            return res.status(404).json({
+                success: "false",
+                message: "Case not found"
             });
         }
 
-        caseDetail.status = "In Progress";
-        caseDetail.case_id = case_id;
-        await caseDetail.save();
-
-        res.json({ success: "true", message: "Case confirmed successfully" });
+        res.json({ success: "true", case: updatedCase });
     } catch (error) {
-        console.error(error);
-        res.json({ success: "false", message: "Case confirmation failed" });
+        console.error("Case confirmation error:", error);
+        res.status(500).json({
+            success: "false",
+            message: error.message || "Error confirming case"
+        });
     }
-}
+};
 
 const caseReject = async (req, res) => {
     try {
@@ -145,15 +221,26 @@ const getUserId = (req) => {
 
 // Get Cases Assigned to the User
 export const getCasesForUser = async (req, res) => {
-    const userId = getUserId(req);
-    if (!userId) return res.status(401).json({ message: "Unauthorized" });
-
     try {
-        const cases = await CaseModel.find({ client_id: userId });
-        res.status(200).json({ cases });
+        const { token } = req.body;
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        
+        const cases = await CaseModel.find({ 
+            client_id: decodedToken.id,
+            status: 'Closed'
+        }).populate('advocate_id');
+
+        res.json({
+            success: "true",
+            cases
+        });
     } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: "Error fetching cases", error });
+        console.error('Error fetching user cases:', error);
+        res.status(500).json({
+            success: "false",
+            message: "Error fetching cases",
+            error: error.message
+        });
     }
 };
 
@@ -178,4 +265,33 @@ const getAllCases = async (req, res) => {
     }
 };
 
-export { submitCase, fetchCase, caseConfirm, fetchCaseUser, caseReject, getAllCases };
+export const closeCase = async (req, res) => {
+    try {
+        const { caseId } = req.body;
+        const updatedCase = await CaseModel.findByIdAndUpdate(
+            caseId,
+            { status: "Closed" },
+            { new: true }
+        );
+
+        if (!updatedCase) {
+            return res.status(404).json({
+                success: "false",
+                message: "Case not found"
+            });
+        }
+
+        res.json({
+            success: "true",
+            case: updatedCase
+        });
+    } catch (error) {
+        console.error("Error closing case:", error);
+        res.status(500).json({
+            success: "false",
+            message: error.message || "Error closing case"
+        });
+    }
+};
+
+export { submitCase, fetchCase, fetchCaseUser, caseReject, getAllCases };

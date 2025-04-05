@@ -14,6 +14,8 @@ import PaymentFailed from './pages/PaymentFailed'
 import Navbar from './components/Navbar/Navbar'
 import AdminLogin from './components/Auth/AdminLogin'
 import AdminDashboard from './components/dashboard/Admin/AdminDashboard'
+import './styles/animations-fix.css'; // Add this import
+import './styles/global-width-fix.css'; // Add this import
 
 export default function App() {
   return (

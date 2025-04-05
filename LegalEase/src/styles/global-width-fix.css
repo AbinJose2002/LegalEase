@@ -1,0 +1,45 @@
+/**
+ * Global fixes for component widths
+ * Import this in your main App component
+ */
+
+/* Ensure all main sections take up full viewport width */
+.home-section,
+.advocate-section,
+.blog-section,
+.test-component-wrapper,
+section {
+  width: 100vw;
+  max-width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+}
+
+/* Make containers fluid and full width */
+.container {
+  max-width: 100% !important;
+  width: 100%;
+  padding-left: 2rem !important;
+  padding-right: 2rem !important;
+}
+
+/* Fix any potential horizontal overflow issues */
+body, html {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Fix for bootstrap containers if used */
+.container-fluid {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Fix content wrappers inside the sections */
+.home-content-wrapper,
+.container-wrapper,
+.content-wrapper {
+  width: 100%;
+  max-width: 100%;
+}

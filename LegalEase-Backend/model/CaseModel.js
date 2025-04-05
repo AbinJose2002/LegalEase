@@ -21,6 +21,11 @@ const caseSchema = new mongoose.Schema({
   case_description: { 
     type: String 
   },
+  caseType: {
+    type: String,
+    enum: ['criminal', 'civil', 'family', 'business', 'property', 'other'],
+    required: true
+  },
   status: { 
     type: String, 
     enum: ['Not Approved', 'Open', 'In Progress', 'Closed'], 

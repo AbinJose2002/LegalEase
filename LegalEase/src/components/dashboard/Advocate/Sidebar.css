@@ -2,7 +2,8 @@
 .sidebar {
     background: linear-gradient(180deg, #2c3e50 0%, #3498db 100%);
     color: white;
-    height: 100vh;
+    height: auto; /* Changed from 100vh to auto */
+    min-height: 100vh; /* Add this to ensure minimum full height */
     padding: 1rem;
     transition: all 0.3s ease;
     width: 250px;

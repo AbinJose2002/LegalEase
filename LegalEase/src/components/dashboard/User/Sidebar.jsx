@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faArrowRight, faFileAlt, faMoneyBill, faFolder, faComments, faUser  } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faArrowRight, faFileAlt, faMoneyBill, faFolder, faComments, faUser, faVideo, faStar } from '@fortawesome/free-solid-svg-icons';
 import './Sidebar.css'; // Import the CSS file
 
 const Sidebar = ({ setSelected }) => {
@@ -18,27 +18,20 @@ const Sidebar = ({ setSelected }) => {
                 <FontAwesomeIcon icon={isCollapsed ? faArrowRight : faArrowLeft} />
             </button>
             <h3 style={{ display: isCollapsed ? 'none' : 'block' }}>Dashboard</h3>
-            <ul>
-                <li onClick={() => setSelected('case')}>
-                    <FontAwesomeIcon icon={faFileAlt} style={{ marginRight: '10px', display: isCollapsed ? 'none' : 'block' }} />
-                    <Link  style={{ display: isCollapsed ? 'none' : 'block' }}>Case Details</Link>
-                </li>
-                <li onClick={() => setSelected('payment')}>
-                    <FontAwesomeIcon icon={faMoneyBill} style={{ marginRight: '10px', display: isCollapsed ? 'none' : 'block' }} />
-                    <Link style={{ display: isCollapsed ? 'none' : 'block' }}>Payment</Link>
-                </li>
-                <li onClick={() => setSelected('document')}>
-                    <FontAwesomeIcon icon={faFolder} style={{ marginRight: '10px', display: isCollapsed ? 'none' : 'block' }} />
-                    <Link style={{ display: isCollapsed ? 'none' : 'block' }}>Document</Link>
-                </li>
-                <li onClick={() => setSelected('consult')}>
-                    <FontAwesomeIcon icon={faComments} style={{ marginRight: '10px', display: isCollapsed ? 'none' : 'block' }} />
-                    <Link style={{ display: isCollapsed ? 'none' : 'block' }}>Consult</Link>
-                </li>
-                <li onClick={() => setSelected('profile')}>
-                    <FontAwesomeIcon icon={faUser } style={{ marginRight: '10px', display: isCollapsed ? 'none' : 'block' }} />
-                    <Link style={{ display: isCollapsed ? 'none' : 'block' }}>Profile</Link>
-                </li>
+            <ul className="sidebar-menu">
+                {[
+                    { name: 'case', icon: faFileAlt, label: 'Case Details' },
+                    { name: 'payment', icon: faMoneyBill, label: 'Payment' },
+                    { name: 'document', icon: faFolder, label: 'Document' },
+                    { name: 'profile', icon: faUser, label: 'Profile' },
+                    { name: 'consult', icon: faVideo, label: 'Consultation' },
+                    { name: 'review', icon: faStar, label: 'Review Advocate' }
+                ].map(item => (
+                    <li key={item.name} onClick={() => setSelected(item.name)}>
+                        <FontAwesomeIcon icon={item.icon} style={{ marginRight: '10px', display: isCollapsed ? 'none' : 'block' }} />
+                        <Link style={{ display: isCollapsed ? 'none' : 'block' }}>{item.label}</Link>
+                    </li>
+                ))}
             </ul>
         </div>
     );

@@ -1,0 +1,48 @@
+/**
+ * Global fixes for animation issues
+ * Import this in your main App component or index file
+ */
+
+/* Ensure content stays visible after animation */
+.page-loaded .fade-in,
+.page-loaded h1,
+.page-loaded h2,
+.page-loaded h3,
+.page-loaded h4,
+.page-loaded p,
+.page-loaded .section-title,
+.page-loaded .feature-heading,
+.page-loaded .pre-title,
+.page-loaded .home-tagline,
+.page-loaded .sub-section-title {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+}
+
+/* Add this class to sections to force visibility */
+.content-visible .section-title,
+.content-visible .pre-title,
+.content-visible .section-description,
+.content-visible .sub-section-title,
+.content-visible h1,
+.content-visible h2,
+.content-visible h3,
+.content-visible h4,
+.content-visible .feature-heading,
+.all-content-visible h1,
+.all-content-visible h2,
+.all-content-visible h3,
+.all-content-visible p {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: translateY(0) !important;
+  z-index: 5;
+  position: relative;
+}
+
+/* Fix for animation end state */
+.fade-in.visible {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}

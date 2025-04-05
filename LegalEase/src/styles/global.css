@@ -1,0 +1,120 @@
+/* ...existing styles... */
+
+/* Add styles for the inline form with animations */
+.case-form-enter {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.case-form-enter-active {
+  max-height: 1000px;
+  opacity: 1;
+  transition: all 0.3s ease-in-out;
+}
+
+.case-form-exit {
+  max-height: 1000px;
+  opacity: 1;
+}
+
+.case-form-exit-active {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  transition: all 0.3s ease-in-out;
+}
+
+/* Enhanced form animation */
+.form-slide-down {
+  animation: formSlideDown 0.4s ease forwards;
+}
+
+@keyframes formSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Improved focus styles */
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25) !important;
+  border-color: #80bdff !important;
+  outline: 0 !important;
+  z-index: 5 !important;
+  position: relative !important;
+}
+
+/* Ensure form inputs are always visible */
+.card input, .card textarea, .card select {
+  z-index: 5 !important;
+  position: relative !important;
+}
+
+/* Enhanced case management styles */
+.case-management .table th {
+  font-weight: 600;
+  color: #495057;
+  border-top: none;
+}
+
+.case-management .table tr {
+  transition: all 0.2s ease;
+}
+
+.case-management .table tr:hover {
+  background-color: rgba(0, 123, 255, 0.03);
+}
+
+.case-management .table td {
+  vertical-align: middle;
+}
+
+.case-management .filter-controls {
+  border-radius: 50px;
+  overflow: hidden;
+}
+
+.case-management .filter-controls .btn {
+  border-radius: 0;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+}
+
+.case-management .empty-state {
+  padding: 3rem !important;
+}
+
+.case-details-expanded {
+  border-top: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+.detail-section {
+  height: 100%;
+}
+
+/* Badge enhancements */
+.badge.rounded-pill {
+  font-weight: 500;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  padding: 0.35em 0.65em;
+}
+
+/* Card enhancements */
+.card {
+  transition: all 0.3s ease;
+  border-radius: 0.5rem;
+}
+
+.card:hover {
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ...existing styles... */

@@ -1,0 +1,288 @@
+/* Payment component specific styles */
+
+.payment-manager {
+  --payment-primary: #3a7bd5;
+  --payment-secondary: #3a6073;
+}
+
+.payment-manager .card {
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.payment-manager .bg-gradient-primary {
+  background: linear-gradient(135deg, var(--payment-primary), var(--payment-secondary));
+}
+
+.payment-manager .hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.payment-manager .hover-lift:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.payment-manager .currency-symbol {
+  opacity: 0.6;
+  font-weight: normal;
+}
+
+.payment-manager .selected-case-info {
+  transition: all 0.3s ease;
+}
+
+/* New payment table styles */
+.payment-manager .new-payment-table {
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.payment-manager .payment-table-header {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+  font-size: 0.9rem;
+}
+
+.payment-manager .payment-row {
+  transition: background-color 0.2s ease;
+  border-left: 3px solid transparent;
+}
+
+.payment-manager .payment-row:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.payment-manager .payment-completed {
+  border-left-color: #198754;
+}
+
+.payment-manager .payment-pending {
+  border-left-color: #ffc107;
+}
+
+/* Payment icon styles */
+.payment-manager .payment-icon-container {
+  transition: all 0.2s ease;
+}
+
+.payment-manager .payment-row:hover .payment-icon-container {
+  transform: scale(1.1);
+}
+
+/* Payment statistics cards */
+.payment-manager .stat-card {
+  transition: all 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.payment-manager .stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.payment-manager .payment-icon {
+  border-radius: 50%;
+  height: 70px;
+  width: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Fix table alignment issues */
+.payment-manager .payment-table th,
+.payment-manager .payment-table td {
+  vertical-align: middle;
+}
+
+.payment-manager .table thead th {
+  border-bottom: 2px solid #dee2e6;
+  font-weight: 600;
+  color: #495057;
+}
+
+.payment-manager .table td {
+  padding: 0.85rem 0.75rem;
+}
+
+/* Ensure table cell content alignment */
+.payment-manager .table td.text-end {
+  padding-right: 1.5rem;
+}
+
+.payment-manager .table td.text-center {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+
+/* New Card-based Payment Styles */
+.payment-cards .card {
+  transition: all 0.3s ease;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.payment-cards .payment-card-completed {
+  border-left: 4px solid #198754 !important;
+}
+
+.payment-cards .payment-card-pending {
+  border-left: 4px solid #ffc107 !important;
+}
+
+.payment-cards .payment-type-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 1.5rem;
+}
+
+.payment-cards .amount-display {
+  position: relative;
+}
+
+.payment-cards .currency-symbol {
+  font-size: 1rem;
+  opacity: 0.7;
+  position: relative;
+  top: -0.5rem;
+  margin-right: 2px;
+}
+
+.payment-cards .amount-value {
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.payment-cards .pay-button {
+  padding: 0.75rem 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+/* Payment Summary Styles */
+.payment-summary-item {
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  background-color: rgba(0, 0, 0, 0.02);
+  min-width: 140px;
+}
+
+/* Custom animations */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.payment-manager .fade-in {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes slideInBottom {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.payment-manager .slide-in-bottom {
+  animation: slideInBottom 0.5s ease forwards;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .payment-manager .table-responsive {
+    border: 0;
+    box-shadow: none;
+  }
+  
+  .payment-manager .card-header {
+    padding: 1.5rem;
+  }
+  
+  .payment-manager .payment-icon {
+    height: 50px;
+    width: 50px;
+  }
+  
+  .payment-manager .payment-row {
+    flex-wrap: wrap;
+  }
+  
+  .payment-manager .payment-column-id {
+    width: 10% !important;
+  }
+  
+  .payment-manager .payment-column-details {
+    width: 90% !important;
+  }
+  
+  .payment-manager .payment-column-status,
+  .payment-manager .payment-column-amount,
+  .payment-manager .payment-column-actions {
+    margin-top: 10px;
+    width: 33.33% !important;
+  }
+  
+  .payment-manager .payment-table-header {
+    display: none !important;
+  }
+  
+  .payment-stats-row .col-md-3 {
+    min-width: 200px;
+  }
+  
+  .payment-cards .amount-value {
+    font-size: 1.75rem;
+  }
+  
+  .payment-summary-item {
+    flex: 1 0 40%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .payment-manager .payment-table {
+    min-width: 768px; /* Ensure table doesn't get too compressed */
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .payment-manager .bg-light,
+  .payment-manager .payment-table-header {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: inherit;
+  }
+  
+  .payment-manager .table-light th {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: inherit;
+  }
+  
+  .payment-manager .text-muted {
+    color: rgba(255, 255, 255, 0.6) !important;
+  }
+  
+  .payment-manager .new-payment-table {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .payment-manager .stat-card {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .payment-manager .payment-row {
+    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  
+  .payment-summary-item {
+    background-color: rgba(255, 255, 255, 0.05);
+  }
+}

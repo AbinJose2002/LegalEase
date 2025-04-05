@@ -11,7 +11,7 @@ export default function Body() {
             <Navbar />
             <div className="container">
                 <Home />
-                <Why />
+                {/* <Why /> */}
                 <Advocate />
                 <Blog />
             </div>

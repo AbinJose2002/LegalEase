@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import AdvocateSidebar from './AdvocateSidebar.jsx';
-import Navbar from '../../Navbar/Navbar'
+import Navbar from '../../Navbar/Navbar';
 import Client from './Client';
 import Profile from './Profile';
 import Payment from './Payment';
@@ -10,9 +10,33 @@ import Document from './Document';
 import Case from './Case';
 import Blog from './Blog';
 import Meetings from './Meetings';
+import Reviews from './Reviews';
 
 const AdvocateHome = () => {
     const [selected, setSelected] = useState('client'); // Default selected link
+
+    const renderComponent = () => {
+        switch (selected) {
+            case 'client':
+                return <Client />;
+            case 'profile':
+                return <Profile />;
+            case 'payment':
+                return <Payment />;
+            case 'case':
+                return <Case />;
+            case 'document':
+                return <Document />;
+            case 'blog':
+                return <Blog />;
+            case 'meetings':
+                return <Meetings />;
+            case 'reviews':
+                return <Reviews />;
+            default:
+                return <Client />;
+        }
+    };
 
     return (
         <div className="advocate-dashboard">
@@ -21,27 +45,7 @@ const AdvocateHome = () => {
                 <AdvocateSidebar selected={selected} setSelected={setSelected} />
                 <main className="dashboard-content">
                     <div className="content-wrapper">
-                        {/* Component rendering switch statement */}
-                        {(() => {
-                            switch (selected) {
-                                case 'client':
-                                    return <Client />;
-                                case 'profile':
-                                    return <Profile />;
-                                case 'payment':
-                                    return <Payment />;
-                                case 'case':
-                                    return <Case />;
-                                case 'document':
-                                    return <Document />;
-                                case 'blog':
-                                    return <Blog />;
-                                case 'meetings':
-                                    return <Meetings />;
-                                default:
-                                    return <Client />;
-                            }
-                        })()}
+                        {renderComponent()}
                         <Outlet />
                     </div>
                 </main>
