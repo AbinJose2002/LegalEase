@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Body from './pages/Body'
 import Login from '../src/components/Auth/Login'
 import Home from './components/dashboard/User/Home'
@@ -14,13 +14,14 @@ import PaymentFailed from './pages/PaymentFailed'
 import Navbar from './components/Navbar/Navbar'
 import AdminLogin from './components/Auth/AdminLogin'
 import AdminDashboard from './components/dashboard/Admin/AdminDashboard'
+import AILegalChatbot from './components/Chatbot/AILegalChatbot'
 import './styles/animations-fix.css'; // Add this import
 import './styles/global-width-fix.css'; // Add this import
 
 export default function App() {
   return (
     <div>
-      <BrowserRouter>
+      <Router>
         <Navbar />
         <Routes>
           <Route path='/' element={<Body />}></Route>
@@ -36,8 +37,9 @@ export default function App() {
           <Route path="/payment-failed" element={<PaymentFailed />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/ai-chatbot" element={<AILegalChatbot />} />
         </Routes>
-      </BrowserRouter>
+      </Router>
     </div>
   )
 }
