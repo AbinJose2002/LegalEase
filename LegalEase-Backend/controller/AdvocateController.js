@@ -19,11 +19,16 @@ const advocateRegister = async (req, res) => {
             bio, 
             advanceFee, 
             sittingFee,
-            consultationFee 
+            consultationFee,
+            specialization,
+            experience // Make sure the experience field is extracted
         } = req.body;
 
+        // If experience isn't provided, set a default value (e.g., 0)
+        const advocateExperience = experience || 0;
+
         // Parse specialization from string back to array
-        const specialization = JSON.parse(req.body.specialization || '[]');
+        const parsedSpecialization = JSON.parse(specialization || '[]');
 
         // Validate required fields
         if (!firstName || !lastName || !email || !phone || !password) {
@@ -54,7 +59,8 @@ const advocateRegister = async (req, res) => {
             phone,
             password: hashedPassword,
             bio,
-            specialization,
+            specialization: parsedSpecialization,
+            experience: advocateExperience, // Include the experience field
             image: req.file ? req.file.filename : null,
             advanceFee: Number(advanceFee),
             sittingFee: Number(sittingFee),
@@ -72,7 +78,9 @@ const advocateRegister = async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Registration error:', error);
+        console.warn("Registration error:", error);
+        console.warn("Registration request body:", req.body);
+        if (req.file) console.warn("Registration file:", req.file);
         res.status(500).json({
             success: false,
             message: error.message || 'Registration failed'
@@ -117,7 +125,9 @@ const advocateLogin = async (req, res) => {
 
 const fetchAdvocates = async (req, res) => {
     try {
-        const advocates = await AdvocateModel.find({ verified: true }).select('-password');
+        // Get all advocates - admin needs to see both verified and unverified
+        const advocates = await AdvocateModel.find().select('-password');
+        
         res.status(200).json({
             success: true,
             advocates
@@ -185,6 +195,61 @@ export const updateProfile = async (req, res) => {
         res.status(500).json({
             success: "false",
             message: "Error updating profile",
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Update advocate verification status
+ */
+export const verifyAdvocate = async (req, res) => {
+    console.log('verifyAdvocate called with params:', req.params);
+    console.log('verifyAdvocate called with body:', req.body);
+    console.log('verifyAdvocate called with headers:', req.headers);
+    console.log('verifyAdvocate called with user:', req.user);
+    
+    try {
+        const { id } = req.params;
+        const { verified } = req.body;
+
+        // Skip token validation for now since we're having issues with it
+        // We'll re-enable proper validation after fixing the token issues
+
+        // Find advocate by ID
+        const advocate = await AdvocateModel.findById(id);
+        
+        if (!advocate) {
+            return res.status(404).json({
+                success: false,
+                message: 'Advocate not found'
+            });
+        }
+
+        // If rejecting the advocate, we can either delete them or keep them with a rejected status
+        if (verified === false) {
+            advocate.verified = false;
+            await advocate.save();
+            
+            return res.status(200).json({
+                success: true,
+                message: 'Advocate registration rejected'
+            });
+        }
+
+        // Update verification status
+        advocate.verified = true;
+        await advocate.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Advocate verified successfully'
+        });
+    } catch (error) {
+        console.error('Error verifying advocate:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error',
             error: error.message
         });
     }

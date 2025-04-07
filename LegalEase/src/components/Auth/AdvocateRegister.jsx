@@ -31,14 +31,16 @@ const AdvocateRegister = () => {
     const [image, setImage] = useState('');
     const [advanceFee, setAdvanceFee] = useState('');
     const [sittingFee, setSittingFee] = useState('');
+    const [experience, setExperience] = useState('0');
+    const [consultationFee, setConsultationFee] = useState('');
 
     const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!firstName || !lastName || !email || !password || !phone || !advanceFee || !sittingFee) {
-            alert('Please fill in all fields');
+        if (!firstName || !lastName || !email || !password || !phone || !advanceFee || !sittingFee || !experience) {
+            alert('Please fill in all required fields');
             return;
         }
 
@@ -52,8 +54,9 @@ const AdvocateRegister = () => {
         formData.append('advanceFee', advanceFee);
         formData.append('sittingFee', sittingFee);
         formData.append('image', image);
-        formData.append('consultationFee', advanceFee); // Adding consultation fee
-        formData.append('specialization', JSON.stringify(selected)); // Convert array to string
+        formData.append('experience', experience);
+        formData.append('consultationFee', consultationFee || advanceFee);
+        formData.append('specialization', JSON.stringify(selected));
 
         try {
             const response = await axios.post(
@@ -75,7 +78,6 @@ const AdvocateRegister = () => {
             alert(error.response?.data?.message || 'Registration failed');
         }
 
-        // Reset form fields
         setFirstName('');
         setLastName('');
         setEmail('');
@@ -86,6 +88,8 @@ const AdvocateRegister = () => {
         setSittingFee('');
         setSelected([]);
         setImage('');
+        setExperience('0');
+        setConsultationFee('');
     };
 
     return (
@@ -166,6 +170,19 @@ const AdvocateRegister = () => {
                                 />
                             </div>
                         </div>
+                        <div className="col-md-6 scale-in" style={{ animationDelay: '0.65s' }}>
+                            <div className="form-group">
+                                <label>Years of Experience:</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    value={experience}
+                                    onChange={(e) => setExperience(e.target.value)}
+                                    min="0"
+                                    required
+                                />
+                            </div>
+                        </div>
                         <div className="col-md-12 scale-in" style={{ animationDelay: '0.7s' }}>
                             <div className="form-group">
                                 <label>Bio:</label>
@@ -197,6 +214,18 @@ const AdvocateRegister = () => {
                                     value={sittingFee}
                                     onChange={(e) => setSittingFee(e.target.value)}
                                     required
+                                />
+                            </div>
+                        </div>
+                        <div className="col-md-6 scale-in" style={{ animationDelay: '0.95s' }}>
+                            <div className="form-group">
+                                <label>Consultation Fee:</label>
+                                <input
+                                    type="number"
+                                    className="form-control"
+                                    value={consultationFee}
+                                    onChange={(e) => setConsultationFee(e.target.value)}
+                                    placeholder="If different from advance fee"
                                 />
                             </div>
                         </div>

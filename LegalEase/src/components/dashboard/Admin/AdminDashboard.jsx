@@ -15,6 +15,8 @@ const AdminDashboard = () => {
         advocates: [],
         cases: []
     });
+    const [pendingAdvocates, setPendingAdvocates] = useState([]);
+    const [processingRequest, setProcessingRequest] = useState(null);
 
     useEffect(() => {
         if (!localStorage.getItem('adminToken')) {
@@ -42,20 +44,80 @@ const AdminDashboard = () => {
                 axios.get('http://localhost:8080/api/case/', { headers })
             ]);
 
+            const allAdvocates = advocates.data.advocates || [];
+            const verified = allAdvocates.filter(adv => adv.verified === true);
+            const pending = allAdvocates.filter(adv => adv.verified === false);
+
             setStats({
                 users: users.data.data || [],
-                advocates: advocates.data.advocates || [],
+                advocates: verified,
                 cases: cases.data.data || []
             });
+            setPendingAdvocates(pending);
+
+            console.log(`Found ${verified.length} verified advocates and ${pending.length} pending advocates`);
         } catch (error) {
             console.error('Error fetching dashboard data:', error);
-            // Add more detailed error handling
             if (error.response) {
                 console.error('Response data:', error.response.data);
                 console.error('Response status:', error.response.status);
             }
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleAdvocateVerification = async (id, approve) => {
+        setProcessingRequest(id);
+        try {
+            const token = localStorage.getItem('adminToken');
+            
+            // Ensure we're sending the admin token properly
+            const headers = { 
+                'Authorization': `Bearer ${token}`,
+                'x-user-type': 'admin' // Add this to identify admin requests
+            };
+            
+            console.log(`Sending verification request to advocate with ID: ${id}, approve=${approve}`);
+            console.log("Authorization header:", `Bearer ${token.substring(0, 10)}...`);
+            
+            const response = await axios.put(
+                `http://localhost:8080/api/advocate/verify/${id}`, 
+                { 
+                    verified: approve,
+                    adminToken: token // Also send token in the body as a backup
+                },
+                { headers }
+            );
+            
+            console.log("API Response:", response.data);
+            
+            if (response.data.success) {
+                await fetchDashboardData();
+                alert(`Advocate ${approve ? 'approved' : 'rejected'} successfully`);
+            }
+        } catch (error) {
+            console.error('Error updating advocate status:', error);
+            
+            if (error.response) {
+                console.error('Error response data:', error.response.data);
+                console.error('Error response status:', error.response.status);
+                console.error('Error response headers:', error.response.headers);
+                
+                // Check specifically for token issues
+                if (error.response.status === 400 && 
+                    error.response.data.message?.includes('token')) {
+                    alert('Session expired. Please log in again.');
+                    localStorage.removeItem('adminToken');
+                    localStorage.removeItem('adminInfo');
+                    navigate('/admin/login');
+                    return;
+                }
+            }
+            
+            alert(`Failed to ${approve ? 'approve' : 'reject'} advocate: ${error.response?.data?.message || error.message || 'Unknown error'}`);
+        } finally {
+            setProcessingRequest(null);
         }
     };
 
@@ -138,7 +200,20 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Second Row */}
+            {pendingAdvocates.length > 0 && (
+                <div className="col-md-12">
+                    <div className="alert alert-warning">
+                        <strong>Attention:</strong> You have {pendingAdvocates.length} pending advocate registration{pendingAdvocates.length !== 1 ? 's' : ''} to review.
+                        <button 
+                            className="btn btn-sm btn-warning ms-3"
+                            onClick={() => setActiveTab('advocateRequests')}
+                        >
+                            Review Now
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="col-md-8">
                 <div className="card h-100">
                     <div className="card-body">
@@ -177,7 +252,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Stats Summary */}
             <div className="col-md-4">
                 <div className="card h-100">
                     <div className="card-body">
@@ -210,6 +284,74 @@ const AdminDashboard = () => {
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+    );
+
+    const renderAdvocateRequests = () => (
+        <div className="card animate__animated animate__fadeIn">
+            <div className="card-body">
+                <h5 className="card-title">Advocate Registration Requests</h5>
+                {pendingAdvocates.length === 0 ? (
+                    <div className="alert alert-info">No pending registration requests</div>
+                ) : (
+                    <>
+                        <p className="text-muted">
+                            Showing {pendingAdvocates.length} unverified advocate{pendingAdvocates.length !== 1 ? 's' : ''}
+                        </p>
+                        <div className="table-responsive">
+                            <table className="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Experience</th>
+                                        <th>Specialization</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {pendingAdvocates.map(advocate => (
+                                        <tr key={advocate._id} className="align-middle">
+                                            <td>{advocate.firstName} {advocate.lastName}</td>
+                                            <td>{advocate.email}</td>
+                                            <td>{advocate.phone}</td>
+                                            <td>{advocate.experience || 0} years</td>
+                                            <td>
+                                                {advocate.specialization && advocate.specialization.length > 0 ? 
+                                                    advocate.specialization.map((spec, idx) => (
+                                                        <span key={idx} className="badge bg-info me-1 mb-1">
+                                                            {typeof spec === 'object' ? spec.label : spec}
+                                                        </span>
+                                                    ))
+                                                    : 
+                                                    <span className="text-muted">None specified</span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <button 
+                                                    className="btn btn-sm btn-outline-success me-2" 
+                                                    onClick={() => handleAdvocateVerification(advocate._id, true)}
+                                                    disabled={processingRequest === advocate._id}
+                                                >
+                                                    {processingRequest === advocate._id ? 'Processing...' : 'Approve'}
+                                                </button>
+                                                <button 
+                                                    className="btn btn-sm btn-outline-danger"
+                                                    onClick={() => handleAdvocateVerification(advocate._id, false)}
+                                                    disabled={processingRequest === advocate._id}
+                                                >
+                                                    {processingRequest === advocate._id ? 'Processing...' : 'Reject'}
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
@@ -261,6 +403,7 @@ const AdminDashboard = () => {
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>Status</th>
+                                <th>Experience</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -271,15 +414,12 @@ const AdminDashboard = () => {
                                     <td>{advocate.email}</td>
                                     <td>{advocate.phone}</td>
                                     <td>
-                                        <span className={`badge bg-${advocate.verified ? 'success' : 'warning'}`}>
-                                            {advocate.verified ? 'Verified' : 'Pending'}
-                                        </span>
+                                        <span className="badge bg-success">Verified</span>
                                     </td>
+                                    <td>{advocate.experience} years</td>
                                     <td>
                                         <button className="btn btn-sm btn-outline-primary me-2">View</button>
-                                        <button className="btn btn-sm btn-outline-warning">
-                                            {advocate.verified ? 'Revoke' : 'Verify'}
-                                        </button>
+                                        <button className="btn btn-sm btn-outline-danger">Disable</button>
                                     </td>
                                 </tr>
                             ))}
@@ -335,40 +475,8 @@ const AdminDashboard = () => {
         </div>
     );
 
-    const getUserGrowthData = (users) => {
-        const monthlyData = new Array(6).fill(0);
-        users.forEach(user => {
-            const createdDate = new Date(user.createdAt);
-            const monthDiff = new Date().getMonth() - createdDate.getMonth();
-            if (monthDiff >= 0 && monthDiff < 6) {
-                monthlyData[5 - monthDiff]++;
-            }
-        });
-        return monthlyData;
-    };
-
-    const getCaseCategories = (cases) => {
-        const categories = {
-            Civil: 0,
-            Criminal: 0,
-            Family: 0,
-            Corporate: 0
-        };
-
-        cases.forEach(caseItem => {
-            // Assuming case_title contains category information
-            if (caseItem.case_title?.toLowerCase().includes('civil')) categories.Civil++;
-            else if (caseItem.case_title?.toLowerCase().includes('criminal')) categories.Criminal++;
-            else if (caseItem.case_title?.toLowerCase().includes('family')) categories.Family++;
-            else if (caseItem.case_title?.toLowerCase().includes('corporate')) categories.Corporate++;
-        });
-
-        return Object.values(categories);
-    };
-
     const renderAnalytics = () => (
         <div className="row g-4 animate__animated animate__fadeIn">
-            {/* First Row - 4 Small Charts */}
             <div className="col-md-3">
                 <div className="card h-100">
                     <div className="card-body">
@@ -500,7 +608,6 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Second Row - Statistics Cards */}
             <div className="col-md-4">
                 <div className="card h-100">
                     <div className="card-body">
@@ -531,16 +638,34 @@ const AdminDashboard = () => {
         return months;
     };
 
-    const getMonthlyData = (cases) => {
+    const getUserGrowthData = (users) => {
         const monthlyData = new Array(6).fill(0);
-        cases.forEach(case_item => {
-            const caseDate = new Date(case_item.createdAt);
-            const monthDiff = new Date().getMonth() - caseDate.getMonth();
+        users.forEach(user => {
+            const createdDate = new Date(user.createdAt);
+            const monthDiff = new Date().getMonth() - createdDate.getMonth();
             if (monthDiff >= 0 && monthDiff < 6) {
                 monthlyData[5 - monthDiff]++;
             }
         });
         return monthlyData;
+    };
+
+    const getCaseCategories = (cases) => {
+        const categories = {
+            Civil: 0,
+            Criminal: 0,
+            Family: 0,
+            Corporate: 0
+        };
+
+        cases.forEach(caseItem => {
+            if (caseItem.case_title?.toLowerCase().includes('civil')) categories.Civil++;
+            else if (caseItem.case_title?.toLowerCase().includes('criminal')) categories.Criminal++;
+            else if (caseItem.case_title?.toLowerCase().includes('family')) categories.Family++;
+            else if (caseItem.case_title?.toLowerCase().includes('corporate')) categories.Corporate++;
+        });
+
+        return Object.values(categories);
     };
 
     const generateKeyMetrics = () => [
@@ -621,6 +746,15 @@ const AdminDashboard = () => {
                                 Advocates
                             </button>
                             <button 
+                                className={`list-group-item list-group-item-action d-flex justify-content-between align-items-center ${activeTab === 'advocateRequests' ? 'active' : ''}`}
+                                onClick={() => setActiveTab('advocateRequests')}
+                            >
+                                Advocate Requests
+                                {pendingAdvocates.length > 0 && (
+                                    <span className="badge bg-danger rounded-pill">{pendingAdvocates.length}</span>
+                                )}
+                            </button>
+                            <button 
                                 className={`list-group-item list-group-item-action ${activeTab === 'cases' ? 'active' : ''}`}
                                 onClick={() => setActiveTab('cases')}
                             >
@@ -647,6 +781,7 @@ const AdminDashboard = () => {
                                 {activeTab === 'overview' && renderOverview()}
                                 {activeTab === 'users' && renderUsers()}
                                 {activeTab === 'advocates' && renderAdvocates()}
+                                {activeTab === 'advocateRequests' && renderAdvocateRequests()}
                                 {activeTab === 'cases' && renderCases()}
                                 {activeTab === 'analytics' && renderAnalytics()}
                             </>

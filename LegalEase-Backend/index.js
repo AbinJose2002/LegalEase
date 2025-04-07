@@ -2,7 +2,7 @@ import express from 'express'
 import {connection} from './config/db.js'
 import cors from 'cors'
 import userRouter from './routes/UserRoutes.js'
-import advocateRouter from './routes/AdvocateRoute.js'
+import advocateRouter from './routes/AdvocateRoute.js' // Confirm this matches your actual file name
 import caseRouter from './routes/CaseRoute.js'
 import paymentRoute from './routes/PaymentRoute.js'
 import blogRouter from './routes/BlogRoute.js'
@@ -25,7 +25,19 @@ app.use('/uploads', express.static('uploads'));
 
 //setting routes
 app.use('/api/user/',userRouter)
-app.use('/api/advocate/',advocateRouter)
+app.use('/api/advocate/',advocateRouter) // This path should match what your frontend is calling
+
+// For debug purposes, log all incoming requests to see the verification request
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
+// Add a specific check route to test API connectivity
+app.get("/api/advocate/check", (req, res) => {
+    res.json({ status: "ok", message: "Advocate API is working" });
+});
+
 app.use('/api/case/',caseRouter)
 app.use('/api/payment/',paymentRoute)
 app.use('/api/blogs/',blogRouter)
