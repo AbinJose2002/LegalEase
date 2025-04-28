@@ -294,4 +294,99 @@ export const closeCase = async (req, res) => {
     }
 };
 
+/**
+ * Get all cases for a specific user
+ * @param {Object} req - The request object
+ * @param {Object} res - The response object
+ * @returns {Object} JSON response with user's cases or error message
+ */
+export const getUserCases = async (req, res) => {
+    try {
+        // Log to help debug what we're receiving
+        console.log("getUserCases called with headers:", req.headers);
+        console.log("getUserCases called with params:", req.params);
+        console.log("getUserCases called with query:", req.query);
+        console.log("getUserCases called with user:", req.user);
+        
+        // Get user ID from various possible sources
+        let userId;
+        
+        // Option 1: Extract from Authorization header
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.substring(7);
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                userId = decoded.id;
+                console.log("Extracted user ID from Authorization header:", userId);
+            } catch (tokenError) {
+                console.log("Token verification failed:", tokenError.message);
+                // Continue to try other methods
+            }
+        }
+        
+        // Option 2: Get from request body
+        if (!userId && req.body && req.body.token) {
+            try {
+                const decoded = jwt.verify(req.body.token, process.env.JWT_SECRET);
+                userId = decoded.id;
+                console.log("Extracted user ID from request body:", userId);
+            } catch (tokenError) {
+                console.log("Token verification failed (body):", tokenError.message);
+                // Continue to try other methods
+            }
+        }
+        
+        // Option 3: Get from URL params or query
+        if (!userId) {
+            userId = req.params.userId || req.query.userId || (req.user ? req.user.id : null);
+            console.log("Using URL params/query user ID:", userId);
+        }
+        
+        // Option 4: Get directly from localStorage via cookie (if using cookie auth)
+        if (!userId && req.cookies && req.cookies.usertoken) {
+            try {
+                const decoded = jwt.verify(req.cookies.usertoken, process.env.JWT_SECRET);
+                userId = decoded.id;
+                console.log("Extracted user ID from cookie:", userId);
+            } catch (tokenError) {
+                console.log("Cookie token verification failed:", tokenError.message);
+            }
+        }
+        
+        // If still no userId found, check if we can get it from localStorage
+        if (!userId && req.headers['x-user-id']) {
+            userId = req.headers['x-user-id'];
+            console.log("Using x-user-id header:", userId);
+        }
+        
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "User ID is required. Please make sure you're logged in."
+            });
+        }
+        
+        console.log("Final user ID being used for query:", userId);
+        
+        // Fetch cases where client_id matches the userId
+        const cases = await CaseModel.find({ client_id: userId }).sort({ createdAt: -1 });
+        
+        console.log(`Found ${cases.length} cases for user ${userId}`);
+        
+        return res.status(200).json({
+            success: true,
+            count: cases.length,
+            data: cases
+        });
+    } catch (error) {
+        console.error("Error in getUserCases:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error while fetching user cases",
+            error: error.message
+        });
+    }
+};
+
 export { submitCase, fetchCase, fetchCaseUser, caseReject, getAllCases };

@@ -24,7 +24,8 @@ const Advocate = () => {
   useEffect(() => {
     const fetchAdvocates = async () => {
       try {
-        const response = await axios.get('http://localhost:8080/api/advocate/fetch');
+        // Change the endpoint from /fetch to / since that's what's available in the backend
+        const response = await axios.get('http://localhost:8080/api/advocate/');
         console.log('Advocate data received:', response.data);
         
         // Check data structure and format

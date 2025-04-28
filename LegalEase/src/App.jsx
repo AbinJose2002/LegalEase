@@ -15,6 +15,7 @@ import Navbar from './components/Navbar/Navbar'
 import AdminLogin from './components/Auth/AdminLogin'
 import AdminDashboard from './components/dashboard/Admin/AdminDashboard'
 import AILegalChatbot from './components/Chatbot/AILegalChatbot'
+import ChatbotIframe from './components/Chatbot/ChatbotIframe' // Add this import
 import './styles/animations-fix.css'; // Add this import
 import './styles/global-width-fix.css'; // Add this import
 
@@ -37,7 +38,8 @@ export default function App() {
           <Route path="/payment-failed" element={<PaymentFailed />} />
           <Route path="/admin-login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/ai-chatbot" element={<AILegalChatbot />} />
+          <Route path="/ai-chatbot" element={<ChatbotIframe />} /> {/* Updated to use iframe component */}
+          <Route path="/ai-chatbot-local" element={<AILegalChatbot />} /> {/* Keep the original as alternative */}
         </Routes>
       </Router>
     </div>

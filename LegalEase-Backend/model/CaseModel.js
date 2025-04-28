@@ -1,41 +1,52 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
 const caseSchema = new mongoose.Schema({
-  case_id: { 
-    type: String,
-    unique: true,
-    sparse: true // This allows documents without case_id while maintaining uniqueness
-  },
-  client_id: { 
-    type: String, 
-    required: true  
-  },
-  advocate_id: { 
-    type: String,
-    required: true 
-  },
-  case_title: { 
-    type: String, 
-    required: true 
-  },
-  case_description: { 
-    type: String 
-  },
-  caseType: {
-    type: String,
-    enum: ['criminal', 'civil', 'family', 'business', 'property', 'other'],
-    required: true
-  },
-  status: { 
-    type: String, 
-    enum: ['Not Approved', 'Open', 'In Progress', 'Closed'], 
-    default: 'Not Approved' 
-  },
-  created_at: { 
-    type: Date, 
-    default: Date.now 
-  }
-});
+    case_id: {
+        type: String,
+        required: true,
+        unique: true
+    },
+    case_title: {
+        type: String,
+        required: true
+    },
+    case_description: {
+        type: String,
+        required: true
+    },
+    client_id: {
+        type: String,
+        required: true,
+        ref: 'User'  // Assumes you have a User model
+    },
+    advocate_id: {
+        type: String,
+        required: true,
+        ref: 'Advocate'  // Assumes you have an Advocate model
+    },
+    status: {
+        type: String,
+        enum: ['Open', 'In Progress', 'Closed', 'Not Approved'],
+        default: 'Not Approved'
+    },
+    documents: [{
+        name: String,
+        url: String,
+        uploaded_at: {
+            type: Date,
+            default: Date.now
+        }
+    }],
+    created_at: {
+        type: Date,
+        default: Date.now
+    },
+    updated_at: {
+        type: Date,
+        default: Date.now
+    }
+}, { timestamps: true });
 
 const CaseModel = mongoose.model('Case', caseSchema);
-export default CaseModel
+
+export default CaseModel;

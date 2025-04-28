@@ -146,3 +146,33 @@ export const verifyAdminToken = (req, res, next) => {
         });
     }
 };
+
+// Add a new middleware that extracts user info when possible but doesn't block requests
+export const extractUser = (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            // Continue without user info
+            return next();
+        }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return next();
+        }
+
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            req.user = decoded;
+            console.log("User extracted from token:", decoded);
+        } catch (error) {
+            // Just log the error but don't block the request
+            console.log("Token extraction failed:", error.message);
+        }
+        
+        next();
+    } catch (error) {
+        console.error("User extraction error:", error);
+        next();
+    }
+};

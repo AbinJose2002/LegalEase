@@ -16,6 +16,8 @@ const router = express.Router();
 router.post('/register', upload.single('image'), handleMulterError, advocateRegister);
 router.post('/login', advocateLogin);
 router.get('/', fetchAdvocates);
+// Add the missing /fetch endpoint that the frontend is trying to call
+router.get('/fetch', fetchAdvocates); // Use the same controller function as the root route
 router.post('/profile', getProfile);
 router.put('/profile', updateProfile);
 

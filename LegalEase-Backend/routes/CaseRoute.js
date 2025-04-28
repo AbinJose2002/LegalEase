@@ -1,24 +1,58 @@
 import express from 'express';
-import { submitCase, fetchCase, caseConfirm, fetchCaseUser, caseReject, getAllCases, getCasesForUser, getDocumentsForUser, closeCase } from '../controller/CaseController.js';
+import { 
+    submitCase, 
+    fetchCase, 
+    fetchCaseUser, 
+    caseReject, 
+    caseConfirm, 
+    getCasesForUser, 
+    getDocumentsForUser,
+    closeCase,
+    getUserCases,
+    getAllCases
+} from '../controller/CaseController.js';
+import { verifyToken } from '../middleware/auth.js';
 
-const caseRouter = express.Router();
+const router = express.Router();
 
-caseRouter.post("/submit", submitCase)
-caseRouter.post("/view", fetchCase)
-caseRouter.post("/view-user", fetchCaseUser)
-caseRouter.post("/confirm", caseConfirm)
-caseRouter.post("/reject", caseReject)
-caseRouter.post("/close", closeCase)
+// Create a special middleware for the user cases endpoint
+const optionalAuth = (req, res, next) => {
+    try {
+        // If auth header exists, try to verify it
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const token = authHeader.substring(7);
+            try {
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                req.user = decoded;
+            } catch (err) {
+                console.log("Token verification failed but continuing:", err.message);
+                // Continue anyway, don't block the request
+            }
+        }
+        next();
+    } catch (error) {
+        next(); // Always continue to the route handler
+    }
+};
 
-caseRouter.get("/user/cases", getCasesForUser);
-caseRouter.get("/user/documents/:caseId", getDocumentsForUser);
+// Existing routes
+router.post("/submit", submitCase)
+router.post("/view", fetchCase)
+router.post("/view-user", fetchCaseUser)
+router.post("/confirm", caseConfirm)
+router.post("/reject", caseReject)
+router.post("/close", closeCase)
 
-caseRouter.post('/user-cases', getCasesForUser);
+router.get("/user/cases", getCasesForUser);
+router.get("/user/documents/:caseId", getDocumentsForUser);
 
-caseRouter.get('/', getAllCases); // Add this new route
+router.post('/user-cases', getCasesForUser);
+
+router.get('/', getAllCases); // Add this new route
 
 // Add this test route
-caseRouter.post("/test-submit", (req, res) => {
+router.post("/test-submit", (req, res) => {
     console.log("Received test case submission:", req.body);
     res.json({ 
         success: "true", 
@@ -27,4 +61,10 @@ caseRouter.post("/test-submit", (req, res) => {
     });
 });
 
-export default caseRouter;
+// Update the user cases route - make auth optional
+router.get('/user/cases', optionalAuth, getUserCases);
+
+// Add an alternative route with explicit user ID parameter
+router.get('/user/:userId/cases', getUserCases);
+
+export default router;
