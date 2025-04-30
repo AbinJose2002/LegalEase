@@ -1,30 +1,39 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const paySchema = new mongoose.Schema({
+const paymentSchema = new mongoose.Schema({
     case_id: {
-        type: String,
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Case',
+        required: true
+    },
+    advocate_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Advocate',
         required: true
     },
     type: {
-        type: String,
-        enum: ["advance", "Sitting", "Consultation"], 
+        type: String, 
+        enum: ['Advance', 'Sitting', 'Consultation', 'Other'],
         required: true
-    },
-    status: {
-        type: String,
-        enum: ["Pending", "Completed", "Failed"],
-        default: "Pending"
     },
     amount: {
         type: Number,
         required: true
     },
+    status: {
+        type: String,
+        enum: ['Pending', 'Completed', 'Cancelled'],
+        default: 'Pending'
+    },
+    payment_id: {
+        type: String,
+    },
     payment_date: {
         type: Date,
         default: Date.now
     }
+}, {
+    timestamps: true
 });
 
-const PaymentModel = mongoose.model("payment", paySchema)
-
-export default PaymentModel
+export default mongoose.model('Payment', paymentSchema);

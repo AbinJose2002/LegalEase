@@ -1,6 +1,37 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
+// Configure axios with proper timeout handling - increase it for problematic endpoints
+axios.defaults.timeout = 30000; // Increase timeout to 30 seconds for all requests
+
+// Add response interceptor for retry logic to axios instance
+axios.interceptors.response.use(null, async error => {
+  if (error.config && error.config.retry === undefined) {
+    // Configure retry options for this request
+    error.config.retry = 3; // Number of retries
+    error.config.retryDelay = 1000; // Start with a 1s delay
+    error.config.retryCount = 0; // Initialize retry count
+  }
+  
+  // If no retry property or reached max retry count, reject
+  if (!error.config || !error.config.retry || error.config.retryCount >= error.config.retry) {
+    return Promise.reject(error);
+  }
+  
+  // Increment retry count 
+  error.config.retryCount += 1;
+  
+  // Exponential backoff delay
+  const delay = error.config.retryDelay * Math.pow(2, error.config.retryCount - 1);
+  console.log(`Retrying request (${error.config.retryCount}/${error.config.retry}) after ${delay}ms`);
+  
+  // Wait for the delay
+  await new Promise(resolve => setTimeout(resolve, delay));
+  
+  // Return the request promise again
+  return axios(error.config);
+});
+
 export default function Payment() {
   const [cases, setCases] = useState([]);
   const [payments, setPayments] = useState([]);
@@ -9,11 +40,41 @@ export default function Payment() {
   const [selectedCase, setSelectedCase] = useState(""); 
   const [selectedAdvocateId, setSelectedAdvocateId] = useState(""); 
   const [loadingPayment, setLoadingPayment] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [networkStatus, setNetworkStatus] = useState('online');
+  const [processingPaymentId, setProcessingPaymentId] = useState(null); // Add this state
+
+  // Monitor network status
+  useEffect(() => {
+    const handleOnline = () => {
+      console.log("Network connection restored");
+      setNetworkStatus('online');
+      // Retry pending operations when back online
+      if (selectedCase && payments.length === 0) {
+        fetchPayments(selectedCase);
+      }
+    };
+    
+    const handleOffline = () => {
+      console.log("Network connection lost");
+      setNetworkStatus('offline');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [selectedCase, payments.length]);
 
   useEffect(() => {
     const fetchCases = async () => {
       try {
         setLoading(true);
+        setError(null);
+        
         const userToken = localStorage.getItem('usertoken');
         if (!userToken) {
           setError('No user token found. Please log in.');
@@ -33,7 +94,11 @@ export default function Payment() {
         }
       } catch (err) {
         console.error("Error fetching cases:", err);
-        setError(err.response?.data?.message || "Error fetching cases.");
+        const errorMessage = err.message === 'Network Error' ? 
+          'Unable to connect to server. Please check your internet connection.' : 
+          err.response?.data?.message || "Error fetching cases.";
+          
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -42,6 +107,77 @@ export default function Payment() {
     fetchCases();
   }, []);
 
+  // Separate function for fetching payments to allow reuse
+  const fetchPayments = async (caseId) => {
+    if (!caseId) return;
+    
+    setLoading(true);
+    setError(null);
+
+    try {
+      const selectedCaseData = cases.find((c) => c._id === caseId);
+      if (selectedCaseData) {
+        setSelectedAdvocateId(selectedCaseData.advocate_id);
+      }
+
+      console.log(`Fetching payments for case: ${caseId}`);
+      
+      // Use a more efficient approach to fetch payments - direct endpoint
+      const userToken = localStorage.getItem('usertoken');
+      
+      // Create an AbortController to manually handle timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000); // 25 second timeout
+      
+      try {
+        const res = await axios.post(
+          "http://localhost:8080/api/payment/fetch-case", 
+          { selectedCaseId: caseId },
+          { 
+            headers: { 
+              'Authorization': userToken ? `Bearer ${userToken}` : undefined
+            },
+            signal: controller.signal
+          }
+        );
+        
+        clearTimeout(timeoutId);
+        
+        if (res.data && res.data.payments) {
+          console.log(`Successfully fetched ${res.data.payments.length} payments`);
+          setPayments(res.data.payments);
+        } else {
+          console.log("No payments found for this case");
+          setPayments([]);
+        }
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error fetching payment details:", error);
+      
+      // Special handling for timeout and abort errors
+      if (error.code === 'ECONNABORTED' || error.name === 'AbortError') {
+        setError('The server took too long to respond. Try again later or select a different case.');
+        
+        // Add a fallback: set empty payments so the UI doesn't remain in loading state
+        setPayments([]);
+      } else if (error.message === 'Network Error') {
+        setError('Unable to connect to server. Please check your internet connection.');
+      } else {
+        setError(error.response?.data?.message || "Failed to fetch payment details.");
+      }
+      
+      return false;
+    } finally {
+      setLoading(false);
+      setRetrying(false);
+    }
+  };
+
   const handleCaseChange = async (e) => {
     const selectedCaseId = e.target.value;
     setSelectedCase(selectedCaseId);
@@ -49,41 +185,61 @@ export default function Payment() {
     
     if (!selectedCaseId) return;
     
-    setLoading(true);
+    await fetchPayments(selectedCaseId);
+  };
 
-    try {
-      const selectedCaseData = cases.find((c) => c._id === selectedCaseId);
-      if (selectedCaseData) {
-        setSelectedAdvocateId(selectedCaseData.advocate_id);
+  const handleRetry = async () => {
+    setRetrying(true);
+    setError(null);
+    
+    if (selectedCase) {
+      const success = await fetchPayments(selectedCase);
+      if (success) {
+        setError(null);
       }
+    } else {
+      // If no case is selected, retry fetching cases
+      try {
+        setLoading(true);
+        const userToken = localStorage.getItem('usertoken');
+        
+        const response = await axios.post('http://localhost:8080/api/case/view-user', { 
+          advToken: userToken 
+        });
 
-      const res = await axios.post("http://localhost:8080/api/payment/fetch-case", { selectedCaseId });
-      
-      if (res.data && res.data.payments) {
-        setPayments(res.data.payments);
-        console.log("Fetched payments:", res.data.payments);
-      } else {
-        console.log("No payments found for this case");
-        setPayments([]);
+        if (response.data && response.data.success === "true" && response.data.clients) {
+          setCases(response.data.clients);
+          setError(null);
+        } else {
+          setError("No cases found or invalid response format.");
+        }
+      } catch (err) {
+        console.error("Error retrying case fetch:", err);
+        setError(err.message === 'Network Error' ? 
+          'Still unable to connect to server. Please check your internet connection.' : 
+          err.response?.data?.message || "Error fetching cases.");
+      } finally {
+        setLoading(false);
+        setRetrying(false);
       }
-    } catch (error) {
-      console.error("Error fetching payment details:", error);
-      setError("Failed to fetch payment details.");
-      setPayments([]);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handlePay = async (paymentId) => {
     try {
+      setProcessingPaymentId(paymentId);
       setLoadingPayment(true);
+      setError(null);
+      
       console.log(`Initiating payment for payment ID: ${paymentId}, case: ${selectedCase}`);
       
-      const res = await axios.post('http://localhost:8080/api/payment/sitting', {
-        selectedCase, 
-        paymentId
+      // Use the process endpoint instead of sitting
+      const res = await axios.post('http://localhost:8080/api/payment/process', {
+        paymentId,
+        caseId: selectedCase
       });
+      
+      console.log("Payment process response:", res.data);
       
       if (res.data?.url) {
         console.log("Redirecting to payment gateway:", res.data.url);
@@ -93,10 +249,25 @@ export default function Payment() {
       }
     } catch (error) {
       console.error("Payment initiation error:", error);
-      setError("Payment processing failed. Please try again.");
+      
+      if (error.response) {
+        setError(`Payment failed: ${error.response.data?.message || error.response.statusText}`);
+      } else {
+        setError(`Payment failed: ${error.message}`);
+      }
     } finally {
       setLoadingPayment(false);
+      setProcessingPaymentId(null);
     }
+  };
+
+  // Add a dedicated retry function
+  const handleRetryFetch = async () => {
+    if (!selectedCase) return;
+    
+    setRetrying(true);
+    setError(null);
+    await fetchPayments(selectedCase);
   };
 
   const getCaseName = (caseId) => {
@@ -121,6 +292,16 @@ export default function Payment() {
         </div>
 
         <div className="card-body p-4">
+          {/* Network status indicator */}
+          {networkStatus === 'offline' && (
+            <div className="alert alert-warning d-flex align-items-center mb-4" role="alert">
+              <i className="bi bi-wifi-off me-2 fs-5"></i>
+              <div>
+                You are currently offline. Some features may be unavailable until you reconnect.
+              </div>
+            </div>
+          )}
+          
           <div className="mb-4">
             <label htmlFor="case-select" className="form-label fw-bold mb-2">Select a Case</label>
             <select 
@@ -128,7 +309,7 @@ export default function Payment() {
               className="form-select form-select-lg shadow-sm hover-lift"
               value={selectedCase}
               onChange={handleCaseChange}
-              disabled={loading || cases.length === 0}
+              disabled={loading || cases.length === 0 || networkStatus === 'offline'}
               style={{
                 transition: 'all 0.3s ease',
                 cursor: 'pointer',
@@ -151,16 +332,27 @@ export default function Payment() {
             )}
           </div>
 
-          {/* Error display */}
+          {/* Error display with retry button */}
           {error && (
-            <div className="alert alert-danger slide-in-right d-flex align-items-center" role="alert">
+            <div className="alert alert-danger slide-in-right d-flex align-items-center mb-4" role="alert">
               <i className="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
               <div className="flex-grow-1">
                 <strong>Error:</strong> {error}
               </div>
               <button 
+                className="btn btn-outline-danger ms-3"
+                onClick={handleRetryFetch}
+                disabled={retrying || loading}
+              >
+                {retrying || loading ? (
+                  <><span className="spinner-border spinner-border-sm me-2"></span>Retrying...</>
+                ) : (
+                  <><i className="bi bi-arrow-repeat me-2"></i>Retry</>
+                )}
+              </button>
+              <button 
                 type="button" 
-                className="btn-close" 
+                className="btn-close ms-2" 
                 onClick={() => setError(null)} 
                 aria-label="Close"
               ></button>
@@ -326,9 +518,9 @@ export default function Payment() {
                               <button 
                                 className='btn btn-sm btn-primary rounded-pill px-4 hover-lift shadow-sm'
                                 onClick={() => handlePay(payment._id)}
-                                disabled={loadingPayment}
+                                disabled={processingPaymentId === payment._id}
                               >
-                                {loadingPayment ? (
+                                {processingPaymentId === payment._id ? (
                                   <><span className="spinner-border spinner-border-sm me-2"></span>Processing...</>
                                 ) : (
                                   <><i className="bi bi-credit-card me-2"></i>Pay Now</>

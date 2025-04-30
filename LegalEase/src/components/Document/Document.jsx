@@ -11,32 +11,26 @@ const Document = () => {
 
     const fetchCases = async () => {
         try {
-            // Get user ID and token from localStorage
+            // Get user ID from localStorage
+            const userId = localStorage.getItem('userId');
             const token = localStorage.getItem('userToken');
-            const userId = localStorage.getItem('userId') || localStorage.getItem('usertoken');
             
-            console.log("Fetching cases with:", { 
-                hasToken: !!token, 
-                tokenPreview: token ? `${token.substring(0, 10)}...` : 'none',
-                userId: userId || 'none'
-            });
+            console.log("Fetching cases with userId:", userId);
             
-            let response;
-            
-            if (token) {
-                // Primary approach: Use auth header with token
-                response = await axios.get('http://localhost:8080/api/case/user/cases', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'x-user-id': userId || '' // Backup user ID in header
-                    }
-                });
-            } else if (userId) {
-                // Fallback: Use explicit user ID in URL if token isn't available
-                response = await axios.get(`http://localhost:8080/api/case/user/${userId}/cases`);
-            } else {
-                throw new Error('User authentication information not found');
+            if (!userId) {
+                console.error("No userId found in localStorage");
+                setError("User ID not found. Please log in again.");
+                return;
             }
+            
+            // Pass the userId directly in the URL query parameter
+            const response = await axios.get(`http://localhost:8080/api/case/user/cases?userId=${userId}`, {
+                headers: {
+                    // Also send the auth token if available
+                    ...(token && { 'Authorization': `Bearer ${token}` }),
+                    'x-user-id': userId
+                }
+            });
             
             console.log("Cases API response:", response.data);
             
@@ -49,19 +43,8 @@ const Document = () => {
             }
         } catch (error) {
             console.error("Error fetching cases:", error);
-            
-            // More detailed error logging
-            if (error.response) {
-                console.error("Response data:", error.response.data);
-                console.error("Response status:", error.response.status);
-                console.error("Response headers:", error.response.headers);
-            } else if (error.request) {
-                console.error("No response received, request was:", error.request);
-            }
-            
             setCases([]);
-            // User-friendly error message
-            setError(error.message || "Unable to load your cases. Please try again later.");
+            setError("Unable to load your cases. Please try again later.");
         }
     };
 

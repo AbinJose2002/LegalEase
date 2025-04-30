@@ -15,32 +15,36 @@ import Navbar from './components/Navbar/Navbar'
 import AdminLogin from './components/Auth/AdminLogin'
 import AdminDashboard from './components/dashboard/Admin/AdminDashboard'
 import AILegalChatbot from './components/Chatbot/AILegalChatbot'
-import ChatbotIframe from './components/Chatbot/ChatbotIframe' // Add this import
-import './styles/animations-fix.css'; // Add this import
-import './styles/global-width-fix.css'; // Add this import
+import ChatbotIframe from './components/Chatbot/ChatbotIframe'
+import './styles/animations-fix.css';
+import './styles/global-width-fix.css';
+import './styles/navbar-fix.css'; // Add new CSS file for navbar fix
 
 export default function App() {
   return (
     <div>
       <Router>
         <Navbar />
-        <Routes>
-          <Route path='/' element={<Body />}></Route>
-          <Route path='/login' element={<Login />}></Route>
-          <Route path='/register' element={<Register />}></Route>
-          <Route path='/userdash' element={<Home />}></Route>
-          <Route path='/advocatedash' element={<AdvocateHome />}></Route>
-          <Route path='/advocate-login' element={<AdvocateLogin />}></Route>
-          <Route path='/advocate-register' element={<AdvocateRegister />}></Route>
-          <Route path='/advocate-register-success' element={<AdvocateSuccess />}></Route>
-          <Route path='/advance-payment-success/:pay_type/:pay_id/:case_id' element={<AdvancePaymentSuccess />}></Route>
-          <Route path="/payment-success" element={<PaymentSuccess />} />
-          <Route path="/payment-failed" element={<PaymentFailed />} />
-          <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/ai-chatbot" element={<ChatbotIframe />} /> {/* Updated to use iframe component */}
-          <Route path="/ai-chatbot-local" element={<AILegalChatbot />} /> {/* Keep the original as alternative */}
-        </Routes>
+        {/* Add a wrapper div with top padding to prevent navbar overlap */}
+        <div className="content-wrapper">
+          <Routes>
+            <Route path='/' element={<Body />}></Route>
+            <Route path='/login' element={<Login />}></Route>
+            <Route path='/register' element={<Register />}></Route>
+            <Route path='/userdash' element={<Home />}></Route>
+            <Route path='/advocatedash' element={<AdvocateHome />}></Route>
+            <Route path='/advocate-login' element={<AdvocateLogin />}></Route>
+            <Route path='/advocate-register' element={<AdvocateRegister />}></Route>
+            <Route path='/advocate-register-success' element={<AdvocateSuccess />}></Route>
+            <Route path='/advance-payment-success/:pay_type/:pay_id/:case_id' element={<AdvancePaymentSuccess />}></Route>
+            <Route path="/payment-success" element={<PaymentSuccess />} />
+            <Route path="/payment-failed" element={<PaymentFailed />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            <Route path="/ai-chatbot" element={<ChatbotIframe />} />
+            <Route path="/ai-chatbot-local" element={<AILegalChatbot />} />
+          </Routes>
+        </div>
       </Router>
     </div>
   )

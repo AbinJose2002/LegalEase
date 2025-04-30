@@ -1,266 +1,458 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Button } from 'react-bootstrap';
+import { useNavigate } from 'react-router-dom';
 
-export default function Case() {
-  const [clientDetails, setClientDetails] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError,] = useState(null);
-  const [caseNum, setCaseNum] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState('all');
+const Case = ({ caseData, onStatusChange, advocateId }) => {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [documents, setDocuments] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+    const [advocateCases, setAdvocateCases] = useState([]);
+    const [fetchingCases, setFetchingCases] = useState(false);
+    const [clientDetails, setClientDetails] = useState(null);
+    const [fetchingClient, setFetchingClient] = useState(false);
+    const navigate = useNavigate();
 
-  const caseTypes = [
-    { value: 'all', label: 'All Cases' },
-    { value: 'criminal', label: 'Criminal Law' },
-    { value: 'civil', label: 'Civil Law' },
-    { value: 'family', label: 'Family Law' },
-    { value: 'business', label: 'Business Law' },
-    { value: 'property', label: 'Property Law' },
-    { value: 'other', label: 'Other' }
-  ];
-
-  const getCaseTypeLabel = (type) => {
-    const types = {
-      criminal: 'Criminal Law',
-      civil: 'Civil Law',
-      family: 'Family Law',
-      business: 'Business Law',
-      property: 'Property Law',
-      other: 'Other'
-    };
-    return types[type] || type;
-  };
-
-  const getRelativeTime = (dateString) => {
-    try {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffTime = Math.abs(now - date);
-      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays === 0) {
-        return 'today';
-      } else if (diffDays === 1) {
-        return 'yesterday';
-      } else if (diffDays < 7) {
-        return `${diffDays} days ago`;
-      } else if (diffDays < 30) {
-        const weeks = Math.floor(diffDays / 7);
-        return `${weeks} ${weeks === 1 ? 'week' : 'weeks'} ago`;
-      } else if (diffDays < 365) {
-        const months = Math.floor(diffDays / 30);
-        return `${months} ${months === 1 ? 'month' : 'months'} ago`;
-      } else {
-        const years = Math.floor(diffDays / 365);
-        return `${years} ${years === 1 ? 'year' : 'years'} ago`;
-      }
-    } catch (e) {
-      return 'Unknown date';
-    }
-  };
-
-  useEffect(() => {
-    const fetchClientDetails = async () => {
-      try {
-        const advToken = localStorage.getItem('advocatetoken');
-        const response = await axios.post('http://localhost:8080/api/case/view', { advToken });
-        setClientDetails(response.data.clients);
-        console.log(response.data.clients);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchClientDetails();
-    console.log(caseNum);
-  }, []);
-
-  const handleCloseCase = async (caseId) => {
-    try {
-      const response = await axios.post('http://localhost:8080/api/case/close', { caseId });
-      if (response.data.success === "true") {
-        const updatedCases = clientDetails.map(client => 
-          client._id === caseId ? { ...client, status: 'Closed' } : client
-        );
-        setClientDetails(updatedCases);
-        alert('Case closed successfully');
-      }
-    } catch (error) {
-      console.error('Error closing case:', error);
-      alert('Failed to close case');
-    }
-  };
-
-  const filteredCases = clientDetails.filter(client => 
-    selectedFilter === 'all' ? true : client.caseType === selectedFilter
-  );
-
-  if (loading) return (
-    <div className="d-flex justify-content-center align-items-center p-5">
-      <div className="spinner-border text-primary" role="status">
-        <span className="visually-hidden">Loading...</span>
-      </div>
-      <span className="ms-3">Loading case data...</span>
-    </div>
-  );
-
-  if (error) return (
-    <div className="alert alert-danger" role="alert">
-      <h4 className="alert-heading">Error</h4>
-      <p>{error}</p>
-    </div>
-  );
-
-  return (
-    <div className="case-management fade-in">
-      <div className="d-flex justify-content-between align-items-center mb-4">
-        <h2 className="h3 mb-0 fw-bold scale-in">
-          <i className="bi bi-briefcase me-2 text-primary"></i>
-          Case Management
-        </h2>
+    useEffect(() => {
+        if (caseData && caseData._id) {
+            fetchDocuments(caseData._id);
+            
+            // Fetch client details if we have a client_id
+            if (caseData.client_id) {
+                fetchClientDetails(caseData.client_id);
+            }
+        }
         
-        <div className="d-flex align-items-center">
-          <div className="filter-dropdown me-2">
-            <select 
-              className="form-select shadow-sm"
-              value={selectedFilter}
-              onChange={(e) => setSelectedFilter(e.target.value)}
-              aria-label="Filter by case type"
-            >
-              {caseTypes.map(type => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="btn-group">
-            <button className="btn btn-outline-primary">
-              <i className="bi bi-funnel"></i>
-            </button>
-            <button className="btn btn-outline-primary">
-              <i className="bi bi-sort-down"></i>
-            </button>
-          </div>
-        </div>
-      </div>
+        // Fetch all cases for the logged in advocate
+        if (advocateId) {
+            fetchAdvocateCases();
+        }
+    }, [caseData, advocateId]);
 
-      <div className="alert alert-info mb-4">
-        <div className="d-flex">
-          <div className="me-3">
-            <i className="bi bi-info-circle-fill fs-4"></i>
-          </div>
-          <div>
-            <h5 className="fw-bold mb-1">Payment Required</h5>
-            <p className="mb-0">Cases marked as "In Progress" require client payment to proceed.</p>
-          </div>
-        </div>
-      </div>
-      
-      {filteredCases.length === 0 ? (
-        <div className="empty-state text-center p-5 bg-light rounded-3">
-          <div className="py-5">
-            <i className="bi bi-folder text-secondary" style={{fontSize: '3rem'}}></i>
-            <h4 className="mt-3">No cases found</h4>
-            <p className="text-muted">No cases match your current filter. Try changing the filter criteria.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="card shadow-sm border-0">
-          <div className="table-responsive">
-            <table className="table table-hover mb-0">
-              <thead className="table-light">
-                <tr>
-                  <th>Case ID</th>
-                  <th>Type</th>
-                  <th>Title & Description</th>
-                  <th>Client</th>
-                  <th className="text-center">Status</th>
-                  {/* <th className="text-end">Actions</th> */}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCases.map((client) => (
-                  <tr key={client._id} className="table-row-animation">
-                    <td>
-                      <span className="badge bg-light text-dark border">
-                        {client.case_id}
-                      </span>
-                    </td>
-                    <td>
-                      <span className="badge bg-info text-white rounded-pill px-3 py-2">
-                        {getCaseTypeLabel(client.caseType)}
-                      </span>
-                    </td>
-                    <td>
-                      <div>
-                        <div className="fw-bold">{client.case_title}</div>
-                        <div className="text-muted small text-truncate" style={{maxWidth: '300px'}}>
-                          {client.case_description}
-                        </div>
-                        <div className="mt-1 small text-muted">
-                          <i className="bi bi-clock me-1"></i>
-                          {getRelativeTime(client.created_at)}
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <div className="d-flex align-items-center">
-                        <div className="rounded-circle bg-primary bg-opacity-10 d-flex justify-content-center align-items-center me-2" 
-                            style={{width: '32px', height: '32px'}}>
-                          <i className="bi bi-person text-primary"></i>
-                        </div>
-                        <div>
-                          <div>{`${client.userDetails.firstName} ${client.userDetails.lastName}`}</div>
-                          <small className="text-muted">{client.userDetails.phone}</small>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="text-center">
-                      <span 
-                        className={`badge rounded-pill px-3 py-2 ${
-                          client.status === 'Not Approved' ? 'bg-warning text-dark' : 
-                          client.status === 'Open' ? 'bg-success' : 
-                          client.status === 'In Progress' ? 'bg-info' :
-                          client.status === 'Closed' ? 'bg-secondary' : 
-                          'bg-light text-dark'
-                        }`}
-                      >
-                        <i className={`bi me-1 ${
-                          client.status === 'Not Approved' ? 'bi-hourglass-split' : 
-                          client.status === 'Open' ? 'bi-unlock' : 
-                          client.status === 'In Progress' ? 'bi-gear' :
-                          client.status === 'Closed' ? 'bi-lock' : 
-                          'bi-question-circle'
-                        }`}></i>
-                        {client.status}
-                      </span>
-                    </td>
+    // New function to fetch client details
+    const fetchClientDetails = async (clientId) => {
+        try {
+            setFetchingClient(true);
+            const token = localStorage.getItem('advtoken');
+            
+            if (!token) {
+                console.error("No advocate token found");
+                return;
+            }
+            
+            // Call the API to get client details
+            const response = await axios.get(`http://localhost:8080/api/user/${clientId}`, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                }
+            });
+            
+            console.log("Client details response:", response.data);
+            
+            if (response.data && response.data.success) {
+                setClientDetails(response.data.data);
+            } else {
+                console.warn("Could not fetch client details", response.data);
+            }
+        } catch (err) {
+            console.error("Error fetching client details:", err);
+        } finally {
+            setFetchingClient(false);
+        }
+    };
+
+    const fetchAdvocateCases = async () => {
+        try {
+            setFetchingCases(true);
+            const token = localStorage.getItem('advtoken');
+            const storedAdvocateId = localStorage.getItem('advocateId');
+            
+            // Log the advocate IDs to help diagnose the issue
+            console.log("Component advocateId prop:", advocateId);
+            console.log("Stored advocateId from localStorage:", storedAdvocateId);
+            
+            // Use the most reliable ID (prop first, then localStorage)
+            const effectiveAdvocateId = advocateId || storedAdvocateId;
+            
+            if (!token) {
+                console.error("No advocate token found");
+                setError("Authentication required");
+                setFetchingCases(false);
+                return;
+            }
+            
+            if (!effectiveAdvocateId) {
+                console.error("No advocate ID available");
+                setError("Advocate ID is required");
+                setFetchingCases(false);
+                return;
+            }
+            
+            console.log(`Fetching cases specifically for advocate ID: ${effectiveAdvocateId}`);
+            
+            // Use the endpoint that you have confirmed is working
+            const response = await axios.post(
+                'http://localhost:8080/api/case/fetch', 
+                { advToken: token },
+                { headers: { Authorization: `Bearer ${token}` }}
+            );
+            
+            console.log("Case data response:", response.data);
+            
+            if (response.data.success === "true") {
+                // If response has nested client data
+                const advocateCases = response.data.clients || [];
+                console.log(`Found ${advocateCases.length} cases for advocate ${effectiveAdvocateId}`);
+                setAdvocateCases(advocateCases);
+                setError(null);
+            } else {
+                console.warn("API returned success:false", response.data);
+                setError(response.data?.message || "Failed to fetch cases");
+            }
+        } catch (err) {
+            console.error("Error fetching advocate cases:", err);
+            setError("Could not load your cases");
+        } finally {
+            setFetchingCases(false);
+        }
+    };
+
+    const fetchDocuments = async (caseId) => {
+        try {
+            setLoading(true);
+            const response = await axios.get(`http://localhost:8080/api/documents/${caseId}`);
+            
+            if (response.data && response.data.documents) {
+                setDocuments(response.data.documents);
+            }
+        } catch (err) {
+            console.error("Error fetching documents:", err);
+            setError("Could not load documents for this case");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleFileUpload = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('caseId', caseData._id);
+        formData.append('name', file.name);
+
+        try {
+            setIsUploading(true);
+            setUploadProgress(0);
+            
+            const response = await axios.post(
+                'http://localhost:8080/api/documents/upload',
+                formData,
+                {
+                    headers: {
+                        'Content-Type': 'multipart/form-data'
+                    },
+                    onUploadProgress: (progressEvent) => {
+                        const percentCompleted = Math.round(
+                            (progressEvent.loaded * 100) / progressEvent.total
+                        );
+                        setUploadProgress(percentCompleted);
+                    }
+                }
+            );
+            
+            if (response.data && response.data.success) {
+                alert('Document uploaded successfully');
+                fetchDocuments(caseData._id);
+            }
+        } catch (err) {
+            console.error("Error uploading document:", err);
+            setError("Failed to upload document. Please try again.");
+        } finally {
+            setIsUploading(false);
+        }
+    };
+
+    const handleCloseCase = async () => {
+        if (!window.confirm("Are you sure you want to close this case?")) {
+            return;
+        }
+
+        try {
+            const response = await axios.post(
+                'http://localhost:8080/api/case/close',
+                { caseId: caseData._id }
+            );
+            
+            if (response.data && response.data.success) {
+                alert('Case closed successfully');
+                if (onStatusChange) {
+                    onStatusChange(caseData._id, 'Closed');
+                }
+                // Refresh the list of cases
+                fetchAdvocateCases();
+            }
+        } catch (err) {
+            console.error("Error closing case:", err);
+            setError("Failed to close case. Please try again.");
+        }
+    };
+
+    const handleViewCase = async (caseId, status) => {
+        console.log(`Case status change requested: ${caseId}, ${status}`);
+        
+        if (status === 'Select') {
+            // If case is selected, find it in the advocate cases array
+            try {
+                const selectedCase = advocateCases.find(c => c._id === caseId);
+                console.log("Found case in local data:", selectedCase);
+                
+                if (selectedCase) {
+                    // Use the onStatusChange prop from parent component
+                    if (onStatusChange) {
+                        onStatusChange(selectedCase);
+                    }
+                } else {
+                    // If not found, fetch from API
+                    const token = localStorage.getItem('advtoken');
+                    const response = await axios.get(
+                        `http://localhost:8080/api/case/${caseId}`,
+                        { headers: { Authorization: `Bearer ${token}` }}
+                    );
                     
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          
-          <div className="card-footer bg-white d-flex justify-content-between align-items-center py-3">
-            <div className="text-muted small">
-              Showing {filteredCases.length} of {clientDetails.length} cases
+                    if (response.data && response.data.data) {
+                        onStatusChange(response.data.data);
+                    } else {
+                        setError("Could not load case details");
+                    }
+                }
+            } catch (error) {
+                console.error("Error selecting case:", error);
+                setError("Error loading case details");
+            }
+        } else if (status === 'Back') {
+            // Go back to case list
+            if (onStatusChange) {
+                onStatusChange(null, 'Back');
+            }
+        }
+    };
+
+    // Render the all cases list if no specific case is selected
+    if (!caseData) {
+        return (
+            <div className="card shadow-sm">
+                <div className="card-header bg-primary text-white">
+                    <h5 className="mb-0">Your Cases</h5>
+                </div>
+                <div className="card-body">
+                    {fetchingCases ? (
+                        <div className="text-center p-5">
+                            <div className="spinner-border text-primary" role="status">
+                                <span className="visually-hidden">Loading...</span>
+                            </div>
+                            <p className="mt-2">Loading your cases...</p>
+                        </div>
+                    ) : error ? (
+                        <div className="alert alert-danger">{error}</div>
+                    ) : advocateCases.length === 0 ? (
+                        <div className="alert alert-info">You don't have any cases yet.</div>
+                    ) : (
+                        <div className="table-responsive">
+                            <table className="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Case ID</th>
+                                        <th>Title</th>
+                                        <th>Client</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {advocateCases.map(caseItem => (
+                                        <tr key={caseItem._id}>
+                                            <td>{caseItem.case_id || 'Pending'}</td>
+                                            <td>{caseItem.case_title}</td>
+                                            <td>
+                                                {caseItem.userDetails ? 
+                                                    `${caseItem.userDetails.firstName} ${caseItem.userDetails.lastName}` : 
+                                                    'Unknown Client'}
+                                            </td>
+                                            <td>
+                                                <span className={`badge ${
+                                                    caseItem.status === 'Open' ? 'bg-success' : 
+                                                    caseItem.status === 'Closed' ? 'bg-danger' : 
+                                                    'bg-warning'
+                                                }`}>
+                                                    {caseItem.status}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <button 
+                                                    className="btn btn-sm btn-primary"
+                                                    onClick={() => handleViewCase(caseItem._id, 'Select')}
+                                                >
+                                                    View Details
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
             </div>
-            <div>
-              <button className="btn btn-sm btn-outline-primary me-2" disabled>
-                <i className="bi bi-chevron-left"></i> Previous
-              </button>
-              <button className="btn btn-sm btn-outline-primary" disabled>
-                Next <i className="bi bi-chevron-right"></i>
-              </button>
+        );
+    }
+
+    // Regular case details view when a specific case is selected
+    return (
+        <div className="card shadow-sm">
+            <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 className="mb-0">Case Details</h5>
+                <div>
+                    <button 
+                        className="btn btn-sm btn-light me-2"
+                        onClick={() => handleViewCase(null, 'Back')}
+                    >
+                        Back to All Cases
+                    </button>
+                    <span className={`badge ${
+                        caseData.status === 'Open' ? 'bg-success' : 
+                        caseData.status === 'Closed' ? 'bg-danger' : 
+                        'bg-warning'
+                    }`}>
+                        {caseData.status}
+                    </span>
+                </div>
             </div>
-          </div>
+            <div className="card-body">
+                <div className="row mb-4">
+                    <div className="col-md-6">
+                        <h6>Case ID:</h6>
+                        <p>{caseData.case_id || 'N/A'}</p>
+                    </div>
+                    <div className="col-md-6">
+                        <h6>Filed On:</h6>
+                        <p>{new Date(caseData.created_at).toLocaleDateString()}</p>
+                    </div>
+                </div>
+
+                <div className="mb-4">
+                    <h6>Case Title:</h6>
+                    <p>{caseData.case_title}</p>
+                </div>
+
+                <div className="mb-4">
+                    <h6>Description:</h6>
+                    <p>{caseData.case_description}</p>
+                </div>
+
+                <div className="mb-4">
+                    <h6>Status:</h6>
+                    <p>{caseData.status}</p>
+                    {caseData.status === 'Closed' && caseData.updated_at && (
+                        <p className="text-muted">
+                            Closed on: {new Date(caseData.updated_at).toLocaleDateString()}
+                        </p>
+                    )}
+                </div>
+
+                <div className="mb-4">
+                    <h6>Client Information:</h6>
+                    {fetchingClient ? (
+                        <p>Loading client details...</p>
+                    ) : clientDetails ? (
+                        <div>
+                            <p><strong>Name:</strong> {clientDetails.firstName} {clientDetails.lastName}</p>
+                            <p><strong>Email:</strong> {clientDetails.email}</p>
+                            <p><strong>Phone:</strong> {clientDetails.phone || 'N/A'}</p>
+                        </div>
+                    ) : caseData.userDetails ? (
+                        <div>
+                            <p>Name: {caseData.userDetails.firstName} {caseData.userDetails.lastName}</p>
+                            <p>Email: {caseData.userDetails.email}</p>
+                            <p>Phone: {caseData.userDetails.phone || 'N/A'}</p>
+                        </div>
+                    ) : (
+                        <p>Client ID: {caseData.client_id}</p>
+                    )}
+                </div>
+
+                <div className="mb-4">
+                    <h6>Case Documents:</h6>
+                    {loading ? (
+                        <p>Loading documents...</p>
+                    ) : error ? (
+                        <div className="alert alert-danger">{error}</div>
+                    ) : documents.length > 0 ? (
+                        <div className="list-group">
+                            {documents.map(doc => (
+                                <a 
+                                    key={doc._id} 
+                                    href={`http://localhost:8080/uploads/${doc.file}`} 
+                                    className="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                >
+                                    <span>{doc.name || doc.file}</span>
+                                    <small>{new Date(doc.createdAt).toLocaleDateString()}</small>
+                                </a>
+                            ))}
+                        </div>
+                    ) : (
+                        <p>No documents available for this case</p>
+                    )}
+
+                    {caseData.status !== 'Closed' && (
+                        <div className="mt-3">
+                            {isUploading ? (
+                                <div className="progress">
+                                    <div 
+                                        className="progress-bar" 
+                                        role="progressbar" 
+                                        style={{width: `${uploadProgress}%`}}
+                                        aria-valuenow={uploadProgress} 
+                                        aria-valuemin="0" 
+                                        aria-valuemax="100"
+                                    >
+                                        {uploadProgress}%
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="custom-file">
+                                    <input 
+                                        type="file" 
+                                        className="form-control" 
+                                        id="documentUpload" 
+                                        onChange={handleFileUpload} 
+                                    />
+                                    <label className="form-label" htmlFor="documentUpload">
+                                        Upload Document
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+
+                {caseData.status !== 'Closed' && (
+                    <div className="d-flex justify-content-end">
+                        <button 
+                            className="btn btn-danger"
+                            onClick={handleCloseCase}
+                        >
+                            Close Case
+                        </button>
+                    </div>
+                )}
+            </div>
         </div>
-      )}
-    </div>
-  );
-}
+    );
+};
+
+export default Case;

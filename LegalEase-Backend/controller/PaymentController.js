@@ -3,6 +3,8 @@ import jwt from 'jsonwebtoken';
 import AdvocateModel from "../model/AdvocateModel.js";
 import CaseModel from "../model/CaseModel.js";
 import PaymentModel from "../model/PaymentModel.js";
+import { userModal } from '../model/UserModel.js';
+import mongoose from 'mongoose';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -119,24 +121,64 @@ const fetchPaymentByCase = async (req, res) => {
     }
 }
 
-const addPayment = async (req, res) => {
-    const { case_id, type, amount } = req.body;
+export const addPayment = async (req, res) => {
     try {
+        console.log("Payment add request:", req.body);
+        
+        const { case_id, type, amount, advocate_id } = req.body;
+        
+        // Input validation
+        if (!case_id || !type || !amount) {
+            return res.status(400).json({
+                success: false,
+                message: "Missing required fields: case_id, type, and amount are required"
+            });
+        }
+
+        // Validate case_id format and existence
+        if (!mongoose.Types.ObjectId.isValid(case_id)) {
+            return res.status(400).json({
+                success: false,
+                message: "Invalid case ID format"
+            });
+        }
+
+        const caseExists = await CaseModel.findById(case_id);
+        if (!caseExists) {
+            return res.status(404).json({
+                success: false,
+                message: "Case not found"
+            });
+        }
+
+        // Create a new payment
         const newPayment = new PaymentModel({
             case_id,
             type,
-            amount,
-            status: "Pending", // Default status
-            payment_date: new Date()
+            amount: Number(amount),
+            status: "Pending",
+            payment_date: new Date(),
+            advocate_id: advocate_id || caseExists.advocate_id
         });
 
-        await newPayment.save();
+        // Save to database
+        const savedPayment = await newPayment.save();
+        console.log("Payment saved successfully:", savedPayment);
 
-        res.status(201).json({ message: "Payment added successfully", payment: newPayment });
+        return res.status(201).json({
+            success: true,
+            message: "Payment added successfully",
+            payment: savedPayment
+        });
     } catch (error) {
-        res.json({ success: "false" })
+        console.error("Error adding payment:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error while adding payment",
+            error: error.message
+        });
     }
-}
+};
 
 export const handleStripeWebhook = async (req, res) => {
     const sig = req.headers["stripe-signature"];
@@ -237,4 +279,235 @@ export const getAdvocateEarnings = async (req, res) => {
     }
 };
 
-export { acceptAdvance, paymentUpdate, fetchPaymentByCase, addPayment, acceptSitting, getAllPayments }
+export const getAdvocatePendingPayments = async (req, res) => {
+    try {
+        const { advocateId } = req.params;
+        
+        // Validate the advocate ID
+        if (!advocateId) {
+            return res.status(400).json({
+                success: false,
+                message: "Advocate ID is required"
+            });
+        }
+        
+        // Find all pending payments for this advocate
+        const pendingPayments = await PaymentModel.find({
+            advocate_id: advocateId,
+            status: 'pending'
+        }).populate('case_id client_id');
+        
+        console.log(`Found ${pendingPayments.length} pending payments for advocate ${advocateId}`);
+        
+        // Format the response
+        const formattedPayments = await Promise.all(pendingPayments.map(async payment => {
+            // Get client details
+            const client = await userModal.findById(payment.client_id);
+            
+            return {
+                id: payment._id,
+                caseId: payment.case_id._id,
+                caseTitle: payment.case_id.case_title,
+                caseNumber: payment.case_id.case_id,
+                clientName: client ? `${client.firstName} ${client.lastName}` : 'Unknown Client',
+                amount: payment.amount,
+                type: payment.type,
+                status: payment.status,
+                description: payment.description,
+                createdAt: payment.createdAt
+            };
+        }));
+        
+        return res.status(200).json({
+            success: true,
+            count: formattedPayments.length,
+            data: formattedPayments
+        });
+    } catch (error) {
+        console.error("Error fetching advocate pending payments:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching pending payments",
+            error: error.message
+        });
+    }
+};
+
+export const advancePayment = async (req, res) => {
+    try {
+        // Implementation of the advancePayment function
+        // This is a placeholder that you can customize based on requirements
+        const { caseId, amount } = req.body;
+        
+        if (!caseId || !amount) {
+            return res.status(400).json({
+                success: false,
+                message: "Case ID and amount are required"
+            });
+        }
+        
+        // Check if case exists
+        const caseExists = await CaseModel.findById(caseId);
+        if (!caseExists) {
+            return res.status(404).json({
+                success: false,
+                message: "Case not found"
+            });
+        }
+        
+        // Create a new payment record
+        const newPayment = new PaymentModel({
+            case_id: caseId,
+            advocate_id: caseExists.advocate_id,
+            type: 'Advance',
+            amount: Number(amount),
+            status: 'Pending',
+            payment_date: new Date()
+        });
+        
+        const savedPayment = await newPayment.save();
+        
+        return res.status(201).json({
+            success: true,
+            message: "Advance payment initiated",
+            payment: savedPayment
+        });
+    } catch (error) {
+        console.error("Error in advancePayment:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error while processing advance payment",
+            error: error.message
+        });
+    }
+};
+
+export const fetchPayment = async (req, res) => {
+    // ...existing code...
+};
+
+export const fetchCasePayment = async (req, res) => {
+    // ...existing code...
+};
+
+export const cancelPayment = async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        const { reason } = req.body;
+        
+        console.log(`Payment cancellation requested for payment ID: ${paymentId}`);
+        console.log(`Reason: ${reason || 'Not provided'}`);
+        
+        if (!paymentId) {
+            return res.status(400).json({
+                success: false,
+                message: "Payment ID is required"
+            });
+        }
+        
+        // Find the payment
+        const payment = await PaymentModel.findById(paymentId);
+        
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: "Payment not found"
+            });
+        }
+        
+        // Only cancel if the payment is not already completed
+        if (payment.status === 'Completed') {
+            return res.status(400).json({
+                success: false,
+                message: "Cannot cancel a completed payment"
+            });
+        }
+        
+        // Update payment status to Cancelled
+        payment.status = 'Cancelled';
+        await payment.save();
+        
+        console.log(`Payment ${paymentId} marked as cancelled`);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Payment cancelled successfully"
+        });
+    } catch (error) {
+        console.error("Error cancelling payment:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error cancelling payment",
+            error: error.message
+        });
+    }
+};
+
+export const successPayment = async (req, res) => {
+    try {
+        const { paymentId } = req.params;
+        const { sessionId, caseId } = req.body;
+        
+        console.log(`Payment success called for paymentId: ${paymentId}`);
+        console.log(`Session ID: ${sessionId}`);
+        console.log(`Case ID: ${caseId}`);
+        
+        if (!paymentId) {
+            return res.status(400).json({
+                success: false,
+                message: "Payment ID is required"
+            });
+        }
+        
+        // Validate payment record exists
+        const payment = await PaymentModel.findById(paymentId);
+        if (!payment) {
+            return res.status(404).json({
+                success: false,
+                message: "Payment not found"
+            });
+        }
+        
+        // Check if payment is already completed to prevent double processing
+        if (payment.status === 'Completed') {
+            // Payment already processed, return success with existing payment details
+            return res.status(200).json({
+                success: true,
+                message: "Payment already marked as completed",
+                payment
+            });
+        }
+        
+        // Update payment status to Completed
+        payment.status = 'Completed';
+        payment.payment_id = sessionId || 'manual-' + Date.now();
+        await payment.save();
+        
+        console.log(`Payment ${paymentId} marked as completed`);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Payment completed successfully",
+            payment
+        });
+    } catch (error) {
+        console.error("Error processing payment success:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error processing payment success",
+            error: error.message
+        });
+    }
+};
+
+export default {
+    advancePayment,
+    fetchPayment,
+    fetchCasePayment,
+    cancelPayment,
+    successPayment,
+    getAdvocatePendingPayments,
+    addPayment
+};
+
+export { acceptAdvance, paymentUpdate, fetchPaymentByCase, acceptSitting, getAllPayments }

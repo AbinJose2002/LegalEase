@@ -255,4 +255,90 @@ export const verifyAdvocate = async (req, res) => {
     }
 };
 
+// Add token verification endpoint
+export const verifyToken = async (req, res) => {
+    try {
+        const { token } = req.body;
+        
+        if (!token) {
+            return res.status(400).json({
+                success: false,
+                message: "Token is required"
+            });
+        }
+        
+        // Verify the token
+        const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+        
+        // Get advocate information
+        const advocate = await AdvocateModel.findById(decodedToken.id).select('-password');
+        
+        if (!advocate) {
+            return res.status(404).json({
+                success: false,
+                message: "Advocate not found"
+            });
+        }
+        
+        // Check if advocate is verified
+        if (!advocate.verified) {
+            return res.status(403).json({
+                success: false,
+                message: "Your account is not verified yet"
+            });
+        }
+        
+        res.json({
+            success: true,
+            message: "Token is valid",
+            advocateId: advocate._id,
+            advocate: {
+                firstName: advocate.firstName,
+                lastName: advocate.lastName,
+                email: advocate.email
+            }
+        });
+    } catch (error) {
+        if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: "Invalid or expired token"
+            });
+        }
+        
+        console.error("Token verification error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error verifying token"
+        });
+    }
+};
+
+// Add endpoint to get advocate profile by ID
+export const getProfileById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const advocate = await AdvocateModel.findById(id).select('-password');
+        
+        if (!advocate) {
+            return res.status(404).json({
+                success: false,
+                message: "Advocate not found"
+            });
+        }
+        
+        res.json({
+            success: true,
+            advocate
+        });
+    } catch (error) {
+        console.error("Get profile error:", error);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching profile"
+        });
+    }
+};
+
 export { advocateRegister, advocateLogin, fetchAdvocates };

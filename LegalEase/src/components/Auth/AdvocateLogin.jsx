@@ -7,28 +7,72 @@ import { Link } from 'react-router-dom';
 const AdvocateLogin = () => {
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState('');
     const navigate = useNavigate()
     const handleSubmit = async (e) => {
         e.preventDefault();
-        // Handle AdvocateLogin logic here
-        console.log('Username:', username);
-        console.log('Password:', password);
-        const loginData = {
-            username,
-            password
-        }
+        
         try {
-            const loginResponse = await axios.post("http://localhost:8080/api/advocate/login",loginData);
-            console.log(loginResponse)
-            if(loginResponse.data.success){
-                localStorage.setItem("advocatetoken",loginResponse.data.data)
-                navigate('/advocatedash')
-            }else{
-                console.log(loginResponse.data.message)
-
+            setIsSubmitting(true);
+            setError('');
+            
+            // Check email and password
+            if (!username || !password) {
+                setError('Please enter both email and password');
+                setIsSubmitting(false);
+                return;
+            }
+            
+            const response = await axios.post('http://localhost:8080/api/advocate/login', {
+                username: username,
+                password: password
+            });
+            
+            console.log('Login response:', response.data);
+            
+            if (response.data.success === true) {
+                // Get advocate token
+                const token = response.data.data;
+                
+                // Store token with correct key - Make sure this matches what AdvocateHome.jsx expects
+                localStorage.setItem('advtoken', token);
+                
+                // Get advocate details to extract ID
+                try {
+                    const userResponse = await axios.post('http://localhost:8080/api/advocate/profile', 
+                        { token },
+                        { headers: { Authorization: `Bearer ${token}` }}
+                    );
+                    
+                    if (userResponse.data.success === "true" && userResponse.data.advocate) {
+                        localStorage.setItem('advocateId', userResponse.data.advocate._id);
+                        console.log("Advocate ID saved:", userResponse.data.advocate._id);
+                        
+                        // Set a session storage flag to indicate fresh login
+                        sessionStorage.setItem('advocateJustLoggedIn', 'true');
+                    }
+                } catch (userError) {
+                    console.warn("Could not fetch advocate details:", userError);
+                }
+                
+                // Redirect to advocate dashboard with small delay to ensure storage is complete
+                setTimeout(() => {
+                    navigate('/advocatedash');
+                }, 100);
+            } else {
+                setError(response.data.message || 'Login failed. Please check your credentials.');
             }
         } catch (error) {
-            console.log(error)
+            console.error('Login error:', error);
+            
+            if (error.response?.data?.message === 'Your account is not verified yet. Kindly wait for the verification') {
+                setError('Your account is pending verification. Please wait for admin approval.');
+            } else {
+                setError(error.response?.data?.message || 'Login failed. Please try again.');
+            }
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -64,9 +108,10 @@ const AdvocateLogin = () => {
                                             required
                                         />
                                     </div>
+                                    {error && <p className="text-danger">{error}</p>}
                                     <p>New User? <Link to='/advocate-register'>Register Now</Link></p>
-                                    <button type="submit" className="mt-4 btn btn-primary btn-block" onClick={handleSubmit}>
-                                        Login
+                                    <button type="submit" className="mt-4 btn btn-primary btn-block" disabled={isSubmitting}>
+                                        {isSubmitting ? 'Logging in...' : 'Login'}
                                     </button>
                                 </form>
                             </div>

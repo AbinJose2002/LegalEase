@@ -114,3 +114,127 @@ export const renameDocument = async (req, res) => {
         res.status(500).json({ message: "Error renaming document", error });
     }
 };
+
+/**
+ * Get all documents for a specific user
+ */
+export const getUserDocuments = async (req, res) => {
+    try {
+        console.log("getUserDocuments called with params:", req.params);
+        console.log("getUserDocuments called with query:", req.query);
+        console.log("getUserDocuments called with user:", req.user);
+        
+        // Get user ID from various sources
+        let userId = req.user?.id || req.query.userId || req.params.userId;
+        
+        // Extract from token if available in header
+        const authHeader = req.headers.authorization;
+        if (!userId && authHeader && authHeader.startsWith('Bearer ')) {
+            try {
+                const token = authHeader.substring(7);
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                userId = decoded.id;
+                console.log("Extracted userId from token:", userId);
+            } catch (err) {
+                console.log("Token verification failed, continuing with other methods");
+            }
+        }
+        
+        // Check for userId in custom header
+        if (!userId && req.headers['x-user-id']) {
+            userId = req.headers['x-user-id'];
+        }
+        
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "User ID is required"
+            });
+        }
+        
+        // Find all cases for this user
+        const userCases = await CaseModel.find({ client_id: userId });
+        const caseIds = userCases.map(c => c._id);
+        
+        console.log(`Found ${userCases.length} cases for user ${userId}`);
+        
+        // Find all documents linked to these cases
+        const documents = await DocumentModel.find({ 
+            caseId: { $in: caseIds } 
+        }).sort({ createdAt: -1 });
+        
+        console.log(`Found ${documents.length} documents across all cases`);
+        
+        // Group documents by case
+        const documentsByCase = {};
+        
+        for (const doc of documents) {
+            if (!documentsByCase[doc.caseId]) {
+                documentsByCase[doc.caseId] = [];
+            }
+            documentsByCase[doc.caseId].push(doc);
+        }
+        
+        // Add case details to each group
+        const result = [];
+        for (const caseId in documentsByCase) {
+            const caseDetails = userCases.find(c => c._id.toString() === caseId);
+            if (caseDetails) {
+                result.push({
+                    case: {
+                        id: caseId,
+                        title: caseDetails.case_title,
+                        status: caseDetails.status,
+                        caseId: caseDetails.case_id
+                    },
+                    documents: documentsByCase[caseId]
+                });
+            }
+        }
+        
+        return res.status(200).json({
+            success: true,
+            count: documents.length,
+            data: result
+        });
+    } catch (error) {
+        console.error("Error in getUserDocuments:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Error fetching user documents",
+            error: error.message
+        });
+    }
+};
+
+/**
+ * Get documents for a specific case
+ * @param {Object} req - Request object
+ * @param {Object} res - Response object
+ */
+export const getDocumentsForCase = async (req, res) => {
+    try {
+        const { caseId } = req.params;
+        
+        if (!caseId) {
+            return res.status(400).json({
+                success: false,
+                message: "Case ID is required"
+            });
+        }
+        
+        const documents = await DocumentModel.find({ caseId });
+        
+        return res.status(200).json({
+            success: true,
+            documents
+        });
+    } catch (error) {
+        console.error("Error fetching documents:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Server error while fetching documents",
+            error: error.message
+        });
+    }
+};

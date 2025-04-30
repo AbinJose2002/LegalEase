@@ -1,0 +1,29 @@
+/* Fix for navbar overlapping content */
+.navbar {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1030; /* High z-index to ensure it stays on top */
+}
+
+.content-wrapper {
+  padding-top: 70px; /* Adjust this value based on your navbar height */
+  min-height: calc(100vh - 56px); /* Full viewport height minus navbar height */
+}
+
+/* For responsive design, adjust padding on smaller screens */
+@media (max-width: 768px) {
+  .content-wrapper {
+    padding-top: 60px; /* Slightly smaller on mobile if navbar is smaller */
+  }
+}
+
+/* For pages that need additional spacing */
+.extra-spacing {
+  padding-top: 90px;
+}
+
+/* For admin dashboard which might have its own fixed header */
+.admin-dashboard {
+  padding-top: 0; /* Remove default padding */
+}

@@ -14,6 +14,7 @@ const NavigationBar = () => {
             fixed="top"
             className="shadow-sm"
             expanded={expanded}
+            style={{ zIndex: 1030 }}
         >
             <Container>
                 <Navbar.Brand as={Link} to="/" className="d-flex align-items-center">

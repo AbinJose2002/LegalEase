@@ -5,7 +5,9 @@ import {
     fetchAdvocates,
     getProfile,
     updateProfile,
-    verifyAdvocate
+    verifyAdvocate,
+    // verifyToken,
+    getProfileById
 } from '../controller/AdvocateController.js';
 import { upload, handleMulterError } from '../middleware/multer.js';
 import { verifyToken, verifyAdminToken } from '../middleware/auth.js';
@@ -20,6 +22,17 @@ router.get('/', fetchAdvocates);
 router.get('/fetch', fetchAdvocates); // Use the same controller function as the root route
 router.post('/profile', getProfile);
 router.put('/profile', updateProfile);
+
+// Add new routes for token verification and profile by ID
+router.post('/verify-token', verifyToken);
+router.get('/profile/:id', getProfileById);
+
+// For backwards compatibility, create an alias from verify-token to profile
+// This will prevent 404 errors in the frontend
+router.post('/verify-token', (req, res) => {
+    // Forward the request to the profile endpoint
+    getProfile(req, res);
+});
 
 // Special route for verification - allow normal token or admin token
 // Use a custom middleware for the admin verification

@@ -20,4 +20,48 @@ userRouter.post('/register-check', async (req, res) => {
 
 userRouter.get('/', getAllUsers);
 
+// Add a new route to get user by ID
+userRouter.get('/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
+        
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: "User ID is required"
+            });
+        }
+        
+        // Find the user by ID
+        const user = await userModal.findById(userId);
+        
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+        
+        // Return user data without sensitive information
+        const userData = {
+            _id: user._id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            phone: user.phone
+        };
+        
+        return res.status(200).json({
+            success: true,
+            data: userData
+        });
+    } catch (error) {
+        console.error("Error fetching user:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+});
+
 export default userRouter;
